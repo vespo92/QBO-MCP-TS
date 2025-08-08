@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & Discussions
+    url: https://github.com/vespo92/QBO-MCP-TS/discussions
+    about: Please ask and answer questions in GitHub Discussions
+  - name: Security Issues
+    url: mailto:vespo92@gmail.com
+    about: Please report security vulnerabilities via email
+  - name: Documentation
+    url: https://github.com/vespo92/QBO-MCP-TS#readme
+    about: Check our documentation for setup and usage guides

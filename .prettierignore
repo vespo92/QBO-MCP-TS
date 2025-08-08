@@ -1,0 +1,36 @@
+# Build output
+dist/
+build/
+*.min.js
+
+# Dependencies
+node_modules/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+logs/
+*.log
+
+# Cache
+.cache/
+.eslintcache
+.npm/
+
+# Temporary
+tmp/
+temp/
+
+# Generated
+*.generated.*
+
+# Package files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

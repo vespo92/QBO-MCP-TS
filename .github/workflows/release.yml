@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 2.0.1)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run tests
+        run: npm test
+      
+      - name: Build project
+        run: npm run build
+      
+      - name: Get version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Update package version
+        run: |
+          npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.VERSION }}
+          name: Release v${{ steps.version.outputs.VERSION }}
+          body: |
+            ## What's Changed
+            
+            See [CHANGELOG.md](https://github.com/vespo92/QBO-MCP-TS/blob/main/CHANGELOG.md) for details.
+            
+            ## Installation
+            
+            ```bash
+            npm install qbo-mcp-ts@${{ steps.version.outputs.VERSION }}
+            ```
+            
+            ## Docker Image
+            
+            ```bash
+            docker pull ghcr.io/vespo92/qbo-mcp-ts:${{ steps.version.outputs.VERSION }}
+            ```
+          draft: false
+          prerelease: false
+          files: |
+            dist/**/*.js
+            dist/**/*.d.ts
+      
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        continue-on-error: true
+      
+      - name: Build Docker image
+        run: |
+          docker build -t ghcr.io/vespo92/qbo-mcp-ts:${{ steps.version.outputs.VERSION }} .
+          docker tag ghcr.io/vespo92/qbo-mcp-ts:${{ steps.version.outputs.VERSION }} ghcr.io/vespo92/qbo-mcp-ts:latest
+      
+      - name: Push to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker push ghcr.io/vespo92/qbo-mcp-ts:${{ steps.version.outputs.VERSION }}
+          docker push ghcr.io/vespo92/qbo-mcp-ts:latest
+        continue-on-error: true

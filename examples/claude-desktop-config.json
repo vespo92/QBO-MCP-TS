@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "quickbooks-ts": {
+      "command": "node",
+      "args": [
+        "/Users/vinnieespo/Projects/VCPU/VinOrg2025/MCPServers/QBOMCP-TS/dist/index.js",
+        "--transport",
+        "stdio"
+      ],
+      "env": {
+        "QBO_CLIENT_ID": "your_client_id_here",
+        "QBO_CLIENT_SECRET": "your_client_secret_here",
+        "QBO_COMPANY_ID": "your_company_id_here",
+        "QBO_REFRESH_TOKEN": "your_refresh_token_here",
+        "QBO_ENVIRONMENT": "sandbox",
+        "NODE_ENV": "production",
+        "LOG_LEVEL": "info",
+        "ENABLE_CACHE": "true",
+        "CACHE_TTL": "300",
+        "API_RETRY_ATTEMPTS": "3",
+        "LOG_DIR": "/tmp/qbomcp-logs",
+        "CACHE_DIR": "/tmp/qbomcp-cache"
+      }
+    }
+  }
+}
