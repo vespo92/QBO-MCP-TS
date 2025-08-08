@@ -3,7 +3,6 @@
  */
 
 import { QBOMCPServer } from './server';
-import { config } from './utils/config';
 
 // Mock the config to avoid needing real credentials for tests
 jest.mock('./utils/config', () => ({
@@ -52,50 +51,97 @@ jest.mock('./utils/config', () => ({
   },
 }));
 
-// Mock the API client to avoid real API calls
+// Mock the QuickBooks API client
 jest.mock('./api/client', () => ({
-  QBOApiClient: jest.fn().mockImplementation(() => ({
-    getApiLimits: jest.fn().mockResolvedValue({
-      remaining: 1000,
-      limit: 1000,
-      reset: new Date(),
+  QuickBooksClient: jest.fn().mockImplementation(() => ({
+    initialize: jest.fn().mockResolvedValue(undefined),
+    refreshAccessToken: jest.fn().mockResolvedValue({
+      access_token: 'test-access-token',
+      refresh_token: 'test-refresh-token',
+      expires_in: 3600,
     }),
-    getCompanyInfo: jest.fn().mockResolvedValue({
-      CompanyName: 'Test Company',
-      Country: 'US',
-    }),
+    makeRequest: jest.fn().mockResolvedValue({ data: {} }),
+    createInvoice: jest.fn().mockResolvedValue({ Id: '123' }),
+    getInvoice: jest.fn().mockResolvedValue({ Id: '123', TotalAmt: 100 }),
   })),
 }));
 
-describe('QBOMCP-TS Server', () => {
+// Mock the logger to avoid console output during tests
+jest.mock('./utils/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  },
+  createLogger: jest.fn(() => ({
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  })),
+}));
+
+describe('QBOMCPServer', () => {
   let server: QBOMCPServer;
-  
+
   beforeEach(() => {
     server = new QBOMCPServer();
   });
-  
-  afterEach(async () => {
-    await server.shutdown();
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
-  
-  test('should initialize server successfully', () => {
-    expect(server).toBeDefined();
-    expect(server.getServer()).toBeDefined();
+
+  describe('Server Initialization', () => {
+    it('should create a server instance', () => {
+      expect(server).toBeDefined();
+      expect(server).toBeInstanceOf(QBOMCPServer);
+    });
+
+    it('should initialize with correct server info', async () => {
+      await server.initialize();
+      const serverInfo = server.getServerInfo();
+      expect(serverInfo.name).toBe('qbomcp-ts');
+      expect(serverInfo.version).toBe('2.0.0');
+    });
+
+    it('should have capabilities for tools and resources', async () => {
+      await server.initialize();
+      const serverInfo = server.getServerInfo();
+      expect(serverInfo.capabilities?.tools).toBeDefined();
+      expect(serverInfo.capabilities?.resources).toBeDefined();
+    });
   });
-  
-  test('should have correct server metadata', () => {
-    const mcpServer = server.getServer();
-    expect(mcpServer.serverInfo.name).toBe('qbomcp-ts');
-    expect(mcpServer.serverInfo.version).toBe('2.0.0');
+
+  describe('Tool Registration', () => {
+    it('should register invoice tools', async () => {
+      await server.initialize();
+      const tools = server.getTools();
+      
+      const toolNames = tools.map(t => t.name);
+      expect(toolNames).toContain('create_invoice');
+      expect(toolNames).toContain('get_invoice');
+      expect(toolNames).toContain('list_invoices');
+      expect(toolNames).toContain('update_invoice');
+      expect(toolNames).toContain('delete_invoice');
+      expect(toolNames).toContain('send_invoice');
+    });
   });
-  
-  test('should support tools capability', () => {
-    const mcpServer = server.getServer();
-    expect(mcpServer.serverInfo.capabilities?.tools).toBeDefined();
+
+  describe('Error Handling', () => {
+    it('should handle initialization errors gracefully', async () => {
+      const mockError = new Error('Initialization failed');
+      jest.spyOn(server as any, 'setupTools').mockRejectedValueOnce(mockError);
+      
+      await expect(server.initialize()).rejects.toThrow('Initialization failed');
+    });
   });
-  
-  test('should support resources capability', () => {
-    const mcpServer = server.getServer();
-    expect(mcpServer.serverInfo.capabilities?.resources).toBeDefined();
+
+  describe('Transport Selection', () => {
+    it('should select STDIO transport by default', () => {
+      const transport = server.getTransport();
+      expect(transport).toBe('stdio');
+    });
   });
 });

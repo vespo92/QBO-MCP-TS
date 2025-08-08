@@ -5,7 +5,13 @@ module.exports = {
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.ts$': ['ts-jest', {
+      tsconfig: {
+        moduleResolution: 'node',
+        allowJs: true,
+        esModuleInterop: true,
+      }
+    }],
   },
   collectCoverageFrom: [
     'src/**/*.ts',
@@ -18,7 +24,12 @@ module.exports = {
   coverageReporters: ['text', 'lcov', 'html'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@modelcontextprotocol/sdk/(.*)$': '<rootDir>/node_modules/@modelcontextprotocol/sdk/dist/$1',
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(@modelcontextprotocol)/)',
+  ],
+  extensionsToTreatAsEsm: ['.ts'],
   setupFilesAfterEnv: [],
   testTimeout: 10000,
   verbose: true,

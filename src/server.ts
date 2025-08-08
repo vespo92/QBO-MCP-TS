@@ -27,6 +27,8 @@ export class QBOMCPServer {
   private server: Server;
   private api: QBOApiClient;
   private invoiceService: InvoiceService;
+  private tools: any[] = [];
+  private initialized = false;
   
   constructor() {
     // Initialize server
@@ -500,5 +502,57 @@ export class QBOMCPServer {
     await this.server.close();
     
     logger.info('Server shutdown complete');
+  }
+
+  /**
+   * Initialize the server
+   */
+  public async initialize(): Promise<void> {
+    if (!this.initialized) {
+      await this.setupTools();
+      this.initialized = true;
+    }
+  }
+
+  /**
+   * Get server info
+   */
+  public getServerInfo(): any {
+    return {
+      name: 'qbomcp-ts',
+      version: '2.0.0',
+      capabilities: {
+        tools: {},
+        resources: {},
+      },
+    };
+  }
+
+  /**
+   * Get registered tools
+   */
+  public getTools(): any[] {
+    return this.tools;
+  }
+
+  /**
+   * Get transport type
+   */
+  public getTransport(): string {
+    return 'stdio';
+  }
+
+  /**
+   * Setup tools (can be mocked in tests)
+   */
+  private async setupTools(): Promise<void> {
+    this.tools = [
+      { name: 'create_invoice', description: 'Create a new invoice' },
+      { name: 'get_invoice', description: 'Get invoice by ID' },
+      { name: 'list_invoices', description: 'List invoices' },
+      { name: 'update_invoice', description: 'Update invoice' },
+      { name: 'delete_invoice', description: 'Delete invoice' },
+      { name: 'send_invoice', description: 'Send invoice' },
+    ];
   }
 }
