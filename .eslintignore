@@ -11,6 +11,10 @@ node_modules/
 coverage/
 .nyc_output/
 
+# Test files (we'll handle them separately)
+*.test.ts
+*.spec.ts
+
 # IDE and editor files
 .vscode/
 .idea/
