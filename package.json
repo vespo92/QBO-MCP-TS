@@ -1,6 +1,6 @@
 {
   "name": "qbo-mcp-ts",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "TypeScript QuickBooks Online MCP Server with enhanced features and dual transport support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
