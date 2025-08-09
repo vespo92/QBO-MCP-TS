@@ -4,6 +4,9 @@
   "description": "TypeScript QuickBooks Online MCP Server with enhanced features and dual transport support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "qbo-mcp-ts": "dist/index.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vespo92/QBO-MCP-TS.git"
