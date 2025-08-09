@@ -180,27 +180,31 @@ export const GetInvoicesSchema = z.object({
   dateTo: z.string().optional(),
   minAmount: z.number().optional(),
   maxAmount: z.number().optional(),
-  limit: z.number().max(100).optional()
+  limit: z.number().max(100).optional(),
 });
 
 export const CreateInvoiceSchema = z.object({
   customerName: z.string(),
-  items: z.array(z.object({
-    description: z.string(),
-    amount: z.number().positive(),
-    quantity: z.number().positive().optional(),
-    unitPrice: z.number().positive().optional()
-  })).min(1),
+  items: z
+    .array(
+      z.object({
+        description: z.string(),
+        amount: z.number().positive(),
+        quantity: z.number().positive().optional(),
+        unitPrice: z.number().positive().optional(),
+      }),
+    )
+    .min(1),
   dueDate: z.string().optional(),
   memo: z.string().optional(),
-  emailToCustomer: z.boolean().optional()
+  emailToCustomer: z.boolean().optional(),
 });
 
 export const SendInvoiceSchema = z.object({
   invoiceId: z.string(),
   email: z.string().email().optional(),
   subject: z.string().optional(),
-  message: z.string().optional()
+  message: z.string().optional(),
 });
 
 export const CreateExpenseSchema = z.object({
@@ -210,7 +214,7 @@ export const CreateExpenseSchema = z.object({
   paymentMethod: z.enum(['Cash', 'Check', 'Credit Card', 'Bank']).optional(),
   description: z.string().optional(),
   date: z.string().optional(),
-  referenceNumber: z.string().optional()
+  referenceNumber: z.string().optional(),
 });
 
 export const GetExpensesSchema = z.object({
@@ -220,38 +224,38 @@ export const GetExpensesSchema = z.object({
   minAmount: z.number().optional(),
   maxAmount: z.number().optional(),
   accountName: z.string().optional(),
-  limit: z.number().max(100).optional()
+  limit: z.number().max(100).optional(),
 });
 
 export const ProfitAndLossSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   summarizeBy: z.enum(['Total', 'Month', 'Quarter', 'Year']).optional(),
-  accountingMethod: z.enum(['Cash', 'Accrual']).optional()
+  accountingMethod: z.enum(['Cash', 'Accrual']).optional(),
 });
 
 export const BalanceSheetSchema = z.object({
   asOfDate: z.string().optional(),
   summarizeBy: z.enum(['Total', 'Month', 'Quarter']).optional(),
-  accountingMethod: z.enum(['Cash', 'Accrual']).optional()
+  accountingMethod: z.enum(['Cash', 'Accrual']).optional(),
 });
 
 export const CashFlowSchema = z.object({
   startDate: z.string().optional(),
-  endDate: z.string().optional()
+  endDate: z.string().optional(),
 });
 
 export const AgingReportSchema = z.object({
   reportType: z.enum(['receivables', 'payables']),
   asOfDate: z.string().optional(),
-  agingPeriod: z.number().default(30)
+  agingPeriod: z.number().default(30),
 });
 
 export const GetCustomersSchema = z.object({
   active: z.boolean().optional(),
   withBalance: z.boolean().optional(),
   nameContains: z.string().optional(),
-  limit: z.number().max(100).optional()
+  limit: z.number().max(100).optional(),
 });
 
 export const CreateCustomerSchema = z.object({
@@ -261,32 +265,38 @@ export const CreateCustomerSchema = z.object({
   companyName: z.string().optional(),
   email: z.string().email().optional(),
   phone: z.string().optional(),
-  billingAddress: z.object({
-    line1: z.string().optional(),
-    city: z.string().optional(),
-    countrySubDivisionCode: z.string().optional(),
-    postalCode: z.string().optional()
-  }).optional()
+  billingAddress: z
+    .object({
+      line1: z.string().optional(),
+      city: z.string().optional(),
+      countrySubDivisionCode: z.string().optional(),
+      postalCode: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const CustomerBalanceSchema = z.object({
-  customerName: z.string()
+  customerName: z.string(),
 });
 
 export const ChartOfAccountsSchema = z.object({
   accountType: z.enum(['Asset', 'Liability', 'Equity', 'Income', 'Expense']).optional(),
-  active: z.boolean().optional()
+  active: z.boolean().optional(),
 });
 
 export const JournalEntrySchema = z.object({
   date: z.string(),
-  entries: z.array(z.object({
-    accountName: z.string(),
-    debit: z.number().optional(),
-    credit: z.number().optional(),
-    description: z.string().optional()
-  })).min(2),
-  memo: z.string().optional()
+  entries: z
+    .array(
+      z.object({
+        accountName: z.string(),
+        debit: z.number().optional(),
+        credit: z.number().optional(),
+        description: z.string().optional(),
+      }),
+    )
+    .min(2),
+  memo: z.string().optional(),
 });
 
 // ============================================================================
@@ -424,7 +434,7 @@ export class QBOError extends Error {
     message: string,
     public code: string,
     public statusCode?: number,
-    public details?: any
+    public details?: any,
   ) {
     super(message);
     this.name = 'QBOError';
@@ -463,9 +473,11 @@ export class NetworkError extends QBOError {
 // Utility Types
 // ============================================================================
 
-export type DeepPartial<T> = T extends object ? {
-  [P in keyof T]?: DeepPartial<T[P]>;
-} : T;
+export type DeepPartial<T> = T extends object
+  ? {
+      [P in keyof T]?: DeepPartial<T[P]>;
+    }
+  : T;
 
 export type Awaitable<T> = T | Promise<T>;
 

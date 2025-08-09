@@ -22,37 +22,37 @@ const EnvSchema = z.object({
   QBO_REFRESH_TOKEN: z.string().min(1),
   QBO_ENVIRONMENT: z.enum(['sandbox', 'production']).default('sandbox'),
   QBO_REDIRECT_URI: z.string().url().optional(),
-  
+
   // Server Configuration
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'http', 'verbose', 'debug']).default('info'),
-  
+
   // Transport Configuration
   TRANSPORT_TYPE: z.enum(['stdio', 'sse']).default('stdio'),
   SSE_PORT: z.coerce.number().default(3000),
   SSE_HOST: z.string().default('0.0.0.0'),
-  
+
   // Cache Configuration
   CACHE_TTL: z.coerce.number().default(300), // 5 minutes
   CACHE_MAX_SIZE: z.coerce.number().default(100),
-  
+
   // API Configuration
   API_RETRY_ATTEMPTS: z.coerce.number().default(3),
   API_RETRY_DELAY: z.coerce.number().default(1000),
   API_TIMEOUT: z.coerce.number().default(30000),
   API_RATE_LIMIT_PER_MINUTE: z.coerce.number().default(60),
-  
+
   // Security Configuration
   CORS_ORIGIN: z.string().default('*'),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(100),
-  
+
   // Feature Flags
   ENABLE_CACHE: z.coerce.boolean().default(true),
   ENABLE_RETRY: z.coerce.boolean().default(true),
   ENABLE_HEALTH_CHECK: z.coerce.boolean().default(true),
   ENABLE_METRICS: z.coerce.boolean().default(false),
-  
+
   // File Paths
   LOG_DIR: z.string().default('./logs'),
   CACHE_DIR: z.string().default('./cache'),
@@ -71,17 +71,17 @@ export class Config {
   private constructor() {
     // Parse and validate environment variables
     const parseResult = EnvSchema.safeParse(process.env);
-    
+
     if (!parseResult.success) {
-      const missingVars = parseResult.error.errors.map(e => e.path.join('.')).join(', ');
+      const missingVars = parseResult.error.errors.map((e) => e.path.join('.')).join(', ');
       throw new Error(`Missing or invalid environment variables: ${missingVars}`);
     }
-    
+
     this.env = parseResult.data;
-    
+
     // Load additional config from file if exists
     this.loadConfigFile();
-    
+
     // Create necessary directories
     this.ensureDirectories();
   }
@@ -101,7 +101,7 @@ export class Config {
    */
   private loadConfigFile(): void {
     const configPath = path.resolve(process.cwd(), 'config.json');
-    
+
     if (fs.existsSync(configPath)) {
       try {
         const configContent = fs.readFileSync(configPath, 'utf-8');
@@ -117,8 +117,8 @@ export class Config {
    */
   private ensureDirectories(): void {
     const dirs = [this.env.LOG_DIR, this.env.CACHE_DIR];
-    
-    dirs.forEach(dir => {
+
+    dirs.forEach((dir) => {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
@@ -148,7 +148,7 @@ export class Config {
       port: this.env.SSE_PORT,
       host: this.env.SSE_HOST,
       cors: {
-        origin: this.env.CORS_ORIGIN.split(',').map(o => o.trim()),
+        origin: this.env.CORS_ORIGIN.split(',').map((o) => o.trim()),
         credentials: true,
       },
       rateLimit: {
@@ -243,10 +243,10 @@ export class Config {
     if (!this.configFile) {
       return defaultValue;
     }
-    
+
     const keys = path.split('.');
     let value = this.configFile;
-    
+
     for (const key of keys) {
       if (value && typeof value === 'object' && key in value) {
         value = value[key];
@@ -254,7 +254,7 @@ export class Config {
         return defaultValue;
       }
     }
-    
+
     return value as T;
   }
 

@@ -1,0 +1,63 @@
+name: Test Matrix
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 0 * * 0" # Weekly on Sunday
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test on Node ${{ matrix.node }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["18.x", "20.x", "22.x"]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        exclude:
+          # Windows has issues with some tests, exclude for now
+          - os: windows-latest
+            node: "22.x"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test -- --passWithNoTests --coverage
+
+      - name: Test CLI Help
+        run: node dist/index.js --help
+
+      - name: Test STDIO mode
+        if: matrix.os != 'windows-latest'
+        run: |
+          echo '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"1.0.0","capabilities":{}},"id":1}' | timeout 5s node dist/index.js --transport stdio || [ $? -eq 124 ]
+
+      - name: Upload coverage
+        if: matrix.os == 'ubuntu-latest' && matrix.node == '20.x'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/

@@ -3,13 +3,13 @@
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { 
+import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
   ErrorCode,
-  McpError
+  McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 import { QBOApiClient } from './api/client';
 import { InvoiceService } from './services/invoice';
@@ -29,7 +29,7 @@ export class QBOMCPServer {
   private invoiceService: InvoiceService;
   private tools: any[] = [];
   private initialized = false;
-  
+
   constructor() {
     // Initialize server
     this.server = new Server(
@@ -42,21 +42,21 @@ export class QBOMCPServer {
           tools: {},
           resources: {},
         },
-      }
+      },
     );
-    
+
     // Initialize API client
     this.api = new QBOApiClient();
-    
+
     // Initialize services
     this.invoiceService = new InvoiceService(this.api);
-    
+
     // Set up handlers
     this.setupHandlers();
-    
+
     logger.info('QBOMCP-TS Server initialized');
   }
-  
+
   /**
    * Set up MCP protocol handlers
    */
@@ -65,23 +65,23 @@ export class QBOMCPServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: this.getToolDefinitions(),
     }));
-    
+
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const requestId = crypto.randomUUID();
       logger.setRequestId(requestId);
-      
+
       try {
         logger.tool(request.params.name, 'start', {
           arguments: request.params.arguments,
         });
-        
+
         const result = await this.handleToolCall(
           request.params.name,
-          request.params.arguments || {}
+          request.params.arguments || {},
         );
-        
+
         logger.tool(request.params.name, 'complete');
-        
+
         return {
           content: [
             {
@@ -92,32 +92,25 @@ export class QBOMCPServer {
         };
       } catch (error: any) {
         logger.tool(request.params.name, 'error', { error: error.message });
-        
+
         if (error instanceof ValidationError) {
-          throw new McpError(
-            ErrorCode.InvalidParams,
-            error.message,
-            error.details
-          );
+          throw new McpError(ErrorCode.InvalidParams, error.message, error.details);
         }
-        
-        throw new McpError(
-          ErrorCode.InternalError,
-          error.message || 'An error occurred'
-        );
+
+        throw new McpError(ErrorCode.InternalError, error.message || 'An error occurred');
       } finally {
         logger.clearRequestId();
       }
     });
-    
+
     // Resource handlers
     this.server.setRequestHandler(ListResourcesRequestSchema, async () => ({
       resources: this.getResourceDefinitions(),
     }));
-    
+
     this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       const resource = await this.handleResourceRead(request.params.uri);
-      
+
       return {
         contents: [
           {
@@ -129,7 +122,7 @@ export class QBOMCPServer {
       };
     });
   }
-  
+
   /**
    * Get tool definitions
    */
@@ -138,7 +131,8 @@ export class QBOMCPServer {
       // Invoice Tools
       {
         name: 'get_invoices',
-        description: 'Get invoices with natural language filtering. Say things like "unpaid invoices" or "invoices for John Smith"',
+        description:
+          'Get invoices with natural language filtering. Say things like "unpaid invoices" or "invoices for John Smith"',
         inputSchema: {
           type: 'object',
           properties: {
@@ -265,7 +259,7 @@ export class QBOMCPServer {
           },
         },
       },
-      
+
       // Help and Info Tools
       {
         name: 'help',
@@ -290,7 +284,7 @@ export class QBOMCPServer {
       },
     ];
   }
-  
+
   /**
    * Get resource definitions
    */
@@ -316,13 +310,13 @@ export class QBOMCPServer {
       },
     ];
   }
-  
+
   /**
    * Handle tool calls
    */
   private async handleToolCall(name: string, args: any): Promise<MCPToolResponse> {
     const timer = logger.startTimer();
-    
+
     try {
       switch (name) {
         // Invoice tools
@@ -338,7 +332,7 @@ export class QBOMCPServer {
               cached: false,
             },
           };
-          
+
         case 'create_invoice':
           const created = await this.invoiceService.createInvoice(args);
           return {
@@ -358,7 +352,7 @@ export class QBOMCPServer {
               apiCalls: 2,
             },
           };
-          
+
         case 'send_invoice':
           await this.invoiceService.sendInvoice(args);
           return {
@@ -372,7 +366,7 @@ export class QBOMCPServer {
               apiCalls: 1,
             },
           };
-          
+
         case 'get_invoice_aging':
           const aging = await this.invoiceService.getAgingReport();
           return {
@@ -384,7 +378,7 @@ export class QBOMCPServer {
               apiCalls: 1,
             },
           };
-          
+
         // Help tools
         case 'help':
           return {
@@ -396,12 +390,12 @@ export class QBOMCPServer {
               apiCalls: 0,
             },
           };
-          
+
         case 'get_api_status':
           const limits = await this.api.getApiLimits();
           const cacheStats = cacheService.getStats();
           const queueStats = queueService.getStats();
-          
+
           return {
             success: true,
             data: {
@@ -419,7 +413,7 @@ export class QBOMCPServer {
               apiCalls: 1,
             },
           };
-          
+
         default:
           throw new ValidationError(`Unknown tool: ${name}`);
       }
@@ -428,7 +422,7 @@ export class QBOMCPServer {
       logger.performance(`Tool: ${name}`, duration as unknown as number);
     }
   }
-  
+
   /**
    * Handle resource reads
    */
@@ -436,18 +430,18 @@ export class QBOMCPServer {
     switch (uri) {
       case 'qbo://company/info':
         return await this.api.getCompanyInfo();
-        
+
       case 'qbo://cache/stats':
         return cacheService.getStats();
-        
+
       case 'qbo://queue/stats':
         return queueService.getStats();
-        
+
       default:
         throw new Error(`Unknown resource: ${uri}`);
     }
   }
-  
+
   /**
    * Get help information
    */
@@ -477,30 +471,27 @@ export class QBOMCPServer {
         ],
       },
     };
-    
+
     return topics[topic as keyof typeof topics] || topics.general;
   }
-  
+
   /**
    * Get the MCP server instance
    */
   public getServer(): Server {
     return this.server;
   }
-  
+
   /**
    * Shutdown the server
    */
   public async shutdown(): Promise<void> {
     logger.info('Shutting down QBOMCP-TS server');
-    
-    await Promise.all([
-      cacheService.shutdown(),
-      queueService.shutdown(),
-    ]);
-    
+
+    await Promise.all([cacheService.shutdown(), queueService.shutdown()]);
+
     await this.server.close();
-    
+
     logger.info('Server shutdown complete');
   }
 

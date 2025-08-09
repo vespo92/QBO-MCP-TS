@@ -3,11 +3,17 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g., 2.0.1)"
+        required: true
+        type: string
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   release:
@@ -15,26 +21,71 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
-      
+          node-version-file: ".nvmrc"
+          cache: "npm"
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Build
         run: npm run build
-      
+
+      - name: Run tests
+        run: npm test -- --passWithNoTests
+
+      - name: Create tarball
+        run: npm pack
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/v}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
           files: |
-            dist/**/*.js
-            dist/**/*.d.ts
+            qbo-mcp-ts-*.tgz
           generate_release_notes: true
+          body: |
+            ## QuickBooks Online MCP Server ${{ steps.version.outputs.tag }}
+
+            ### Installation
+
+            #### Quick Start (No Installation)
+            ```bash
+            npx qbo-mcp-ts@${{ steps.version.outputs.version }}
+            ```
+
+            #### Global Installation
+            ```bash
+            npm install -g qbo-mcp-ts@${{ steps.version.outputs.version }}
+            ```
+
+            #### Claude Desktop Config
+            ```json
+            {
+              "mcpServers": {
+                "quickbooks": {
+                  "command": "npx",
+                  "args": ["qbo-mcp-ts@${{ steps.version.outputs.version }}"]
+                }
+              }
+            }
+            ```
+
+            See [npm package](https://www.npmjs.com/package/qbo-mcp-ts) for more details.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

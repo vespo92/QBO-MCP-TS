@@ -10,7 +10,15 @@ module.exports = {
         moduleResolution: 'node',
         allowJs: true,
         esModuleInterop: true,
-      }
+      },
+      useESM: true,
+    }],
+    '^.+\\.js$': ['ts-jest', {
+      tsconfig: {
+        allowJs: true,
+        esModuleInterop: true,
+      },
+      useESM: true,
     }],
   },
   collectCoverageFrom: [
@@ -27,7 +35,7 @@ module.exports = {
     '^@modelcontextprotocol/sdk/(.*)$': '<rootDir>/node_modules/@modelcontextprotocol/sdk/dist/$1',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(@modelcontextprotocol)/)',
+    'node_modules/(?!@modelcontextprotocol)',
   ],
   extensionsToTreatAsEsm: ['.ts'],
   setupFilesAfterEnv: [],

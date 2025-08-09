@@ -20,43 +20,43 @@ export class SSETransport {
   // private transport?: SSEServerTransport;
   private config: TransportConfig;
   private connections: Set<Response> = new Set();
-  
+
   constructor(server: Server, config: TransportConfig) {
     this.server = server;
     this.config = config;
     this.app = express();
-    
+
     logger.info('Initializing SSE transport', {
       port: config.port,
       host: config.host,
     });
-    
+
     this.setupMiddleware();
     this.setupRoutes();
   }
-  
+
   /**
    * Set up Express middleware
    */
   private setupMiddleware(): void {
     // JSON body parser
     this.app.use(express.json({ limit: '10mb' }));
-    
+
     // CORS configuration
     if (this.config.cors) {
       this.app.use((req: Request, res: Response, next: NextFunction) => {
         const origin = Array.isArray(this.config.cors!.origin)
           ? this.config.cors!.origin.join(',')
           : this.config.cors!.origin;
-        
+
         res.header('Access-Control-Allow-Origin', origin);
         res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
         res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        
+
         if (this.config.cors!.credentials) {
           res.header('Access-Control-Allow-Credentials', 'true');
         }
-        
+
         if (req.method === 'OPTIONS') {
           res.sendStatus(204);
         } else {
@@ -64,7 +64,7 @@ export class SSETransport {
         }
       });
     }
-    
+
     // Rate limiting
     if (this.config.rateLimit) {
       const limiter = rateLimit({
@@ -74,14 +74,14 @@ export class SSETransport {
         standardHeaders: true,
         legacyHeaders: false,
       });
-      
+
       this.app.use('/sse', limiter);
     }
-    
+
     // Request logging
     this.app.use((req: Request, res: Response, next: NextFunction) => {
       const start = Date.now();
-      
+
       res.on('finish', () => {
         const duration = Date.now() - start;
         logger.http(`${req.method} ${req.path}`, {
@@ -91,21 +91,21 @@ export class SSETransport {
           userAgent: req.get('user-agent'),
         });
       });
-      
+
       next();
     });
-    
+
     // Error handling
     this.app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
       logger.error('Express error', err);
-      
+
       res.status(500).json({
         error: 'Internal server error',
         message: err.message,
       });
     });
   }
-  
+
   /**
    * Set up Express routes
    */
@@ -121,45 +121,45 @@ export class SSETransport {
         });
       });
     }
-    
+
     // SSE endpoint
     this.app.get('/sse', async (_req: Request, res: Response) => {
       logger.info('SSE client connected', {
         ip: _req.ip,
         userAgent: _req.get('user-agent'),
       });
-      
+
       // Set SSE headers
       res.writeHead(200, {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        Connection: 'keep-alive',
         'X-Accel-Buffering': 'no', // Disable Nginx buffering
       });
-      
+
       // Add to connections set
       this.connections.add(res);
-      
+
       // Send initial ping
       res.write(':ping\n\n');
-      
+
       // Set up keep-alive
       const keepAlive = setInterval(() => {
         res.write(':ping\n\n');
       }, 30000); // Every 30 seconds
-      
+
       // Handle client disconnect
       _req.on('close', () => {
         clearInterval(keepAlive);
         this.connections.delete(res);
         logger.info('SSE client disconnected');
       });
-      
+
       // Create SSE transport for this connection
       const transport = new SSEServerTransport('/message', res);
       await this.server.connect(transport);
     });
-    
+
     // Message endpoint for SSE
     this.app.post('/message', async (_req: Request, res: Response) => {
       try {
@@ -173,7 +173,7 @@ export class SSETransport {
         });
       }
     });
-    
+
     // Server info endpoint
     this.app.get('/info', (_req: Request, res: Response) => {
       res.json({
@@ -188,7 +188,7 @@ export class SSETransport {
         },
       });
     });
-    
+
     // List available tools
     this.app.get('/tools', async (_req: Request, res: Response) => {
       try {
@@ -202,7 +202,7 @@ export class SSETransport {
         });
       }
     });
-    
+
     // List available resources
     this.app.get('/resources', async (_req: Request, res: Response) => {
       try {
@@ -216,7 +216,7 @@ export class SSETransport {
         });
       }
     });
-    
+
     // 404 handler
     this.app.use((_req: Request, res: Response) => {
       res.status(404).json({
@@ -225,7 +225,7 @@ export class SSETransport {
       });
     });
   }
-  
+
   /**
    * Handle incoming messages
    */
@@ -233,7 +233,7 @@ export class SSETransport {
     // This will be handled by the MCP server through the SSE transport
     return { success: true };
   }
-  
+
   /**
    * Start the SSE transport
    */
@@ -241,16 +241,16 @@ export class SSETransport {
     try {
       const port = this.config.port || 3000;
       const host = this.config.host || '0.0.0.0';
-      
+
       logger.info(`Starting SSE transport on ${host}:${port}`);
-      
+
       // Create HTTP server
       this.httpServer = this.app.listen(port, host, () => {
         logger.info(`SSE transport listening on http://${host}:${port}`);
         logger.info(`Health check: http://${host}:${port}${this.config.healthCheckPath}`);
         logger.info(`SSE endpoint: http://${host}:${port}/sse`);
       });
-      
+
       // Handle server errors
       this.httpServer.on('error', (error: any) => {
         if (error.code === 'EADDRINUSE') {
@@ -260,49 +260,48 @@ export class SSETransport {
         }
         process.exit(1);
       });
-      
+
       // Handle process termination
       process.on('SIGINT', () => this.shutdown());
       process.on('SIGTERM', () => this.shutdown());
-      
     } catch (error) {
       logger.error('Failed to start SSE transport', error);
       throw error;
     }
   }
-  
+
   /**
    * Broadcast message to all connected clients
    */
   public broadcast(event: string, data: any): void {
     const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-    
-    this.connections.forEach(res => {
+
+    this.connections.forEach((res) => {
       res.write(message);
     });
   }
-  
+
   /**
    * Get connected clients count
    */
   public getConnectionCount(): number {
     return this.connections.size;
   }
-  
+
   /**
    * Shutdown the transport
    */
   public async shutdown(): Promise<void> {
     logger.info('Shutting down SSE transport');
-    
+
     try {
       // Close all SSE connections
-      this.connections.forEach(res => {
+      this.connections.forEach((res) => {
         res.write('event: shutdown\ndata: {}\n\n');
         res.end();
       });
       this.connections.clear();
-      
+
       // Close HTTP server
       if (this.httpServer) {
         await new Promise<void>((resolve, reject) => {
@@ -312,10 +311,10 @@ export class SSETransport {
           });
         });
       }
-      
+
       // Close MCP server
       await this.server.close();
-      
+
       logger.info('SSE transport shutdown complete');
       process.exit(0);
     } catch (error) {

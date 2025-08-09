@@ -57,7 +57,7 @@ async function main() {
       environment: config.getEnv(),
       features: config.getFeatureFlags(),
     });
-    
+
     // Validate configuration
     try {
       const qboConfig = config.getQBOConfig();
@@ -76,11 +76,11 @@ async function main() {
       console.error('\nSee .env.example for more details.\n');
       process.exit(1);
     }
-    
+
     // Create MCP server
     const mcpServer = new QBOMCPServer();
     const server = mcpServer.getServer();
-    
+
     // Initialize transport based on selection
     if (argv.transport === 'sse') {
       // SSE Transport for production
@@ -90,36 +90,34 @@ async function main() {
         port: argv.port,
         host: argv.host,
       };
-      
+
       const transport = new SSETransport(server, transportConfig);
       await transport.start();
-      
+
       console.log('\n✅ QBOMCP-TS Server started with SSE transport');
       console.log(`📡 Listening on http://${argv.host}:${argv.port}`);
       console.log(`🔗 SSE endpoint: http://${argv.host}:${argv.port}/sse`);
       console.log(`💚 Health check: http://${argv.host}:${argv.port}/health`);
       console.log('\nPress Ctrl+C to shutdown\n');
-      
     } else {
       // STDIO Transport for local development
       const transport = new StdioTransport(server);
       await transport.start();
-      
+
       // In STDIO mode, don't output to console as it interferes with the protocol
       logger.info('QBOMCP-TS Server started with STDIO transport');
     }
-    
+
     // Handle uncaught errors
     process.on('uncaughtException', (error) => {
       logger.error('Uncaught exception', error);
       process.exit(1);
     });
-    
+
     process.on('unhandledRejection', (reason, _promise) => {
       logger.error('Unhandled rejection', reason as Error);
       process.exit(1);
     });
-    
   } catch (error) {
     logger.error('Failed to start server', error);
     console.error('\n❌ Server startup failed:', error);

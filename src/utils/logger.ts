@@ -14,17 +14,17 @@ const { combine, timestamp, printf, colorize, errors } = winston.format;
  */
 const customFormat = printf(({ level, message, timestamp, stack, ...meta }) => {
   let log = `${timestamp} [${level}]: ${message}`;
-  
+
   // Add metadata if present
   if (Object.keys(meta).length > 0) {
     log += ` ${JSON.stringify(meta)}`;
   }
-  
+
   // Add stack trace for errors
   if (stack) {
     log += `\n${stack}`;
   }
-  
+
   return log;
 });
 
@@ -34,13 +34,13 @@ const customFormat = printf(({ level, message, timestamp, stack, ...meta }) => {
 class Logger implements ILoggerService {
   private winston: winston.Logger;
   private requestId?: string;
-  
+
   constructor() {
     const logConfig = config.getLoggerConfig();
-    
+
     // Create transports array
     const transports: winston.transport[] = [];
-    
+
     // Console transport for development
     if (logConfig.enableConsole) {
       transports.push(
@@ -49,12 +49,12 @@ class Logger implements ILoggerService {
             colorize({ all: true }),
             timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
             errors({ stack: true }),
-            customFormat
+            customFormat,
           ),
-        })
+        }),
       );
     }
-    
+
     // File transports for production
     if (logConfig.enableFile) {
       // General log file
@@ -64,13 +64,13 @@ class Logger implements ILoggerService {
           format: combine(
             timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
             errors({ stack: true }),
-            customFormat
+            customFormat,
           ),
           maxsize: 5242880, // 5MB
           maxFiles: 5,
-        })
+        }),
       );
-      
+
       // Error log file
       transports.push(
         new winston.transports.File({
@@ -79,28 +79,25 @@ class Logger implements ILoggerService {
           format: combine(
             timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
             errors({ stack: true }),
-            customFormat
+            customFormat,
           ),
           maxsize: 5242880, // 5MB
           maxFiles: 5,
-        })
+        }),
       );
-      
+
       // API log file for QuickBooks API calls
       transports.push(
         new winston.transports.File({
           filename: path.join(logConfig.dir, 'api.log'),
           level: 'http',
-          format: combine(
-            timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-            customFormat
-          ),
+          format: combine(timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), customFormat),
           maxsize: 5242880, // 5MB
           maxFiles: 5,
-        })
+        }),
       );
     }
-    
+
     // Create Winston logger
     this.winston = winston.createLogger({
       level: logConfig.level,
@@ -108,21 +105,21 @@ class Logger implements ILoggerService {
       exitOnError: false,
     });
   }
-  
+
   /**
    * Set request ID for tracing
    */
   public setRequestId(requestId: string): void {
     this.requestId = requestId;
   }
-  
+
   /**
    * Clear request ID
    */
   public clearRequestId(): void {
     this.requestId = undefined;
   }
-  
+
   /**
    * Add request ID to metadata
    */
@@ -132,21 +129,21 @@ class Logger implements ILoggerService {
     }
     return meta;
   }
-  
+
   /**
    * Log info message
    */
   public info(message: string, meta?: any): void {
     this.winston.info(message, this.addRequestId(meta));
   }
-  
+
   /**
    * Log warning message
    */
   public warn(message: string, meta?: any): void {
     this.winston.warn(message, this.addRequestId(meta));
   }
-  
+
   /**
    * Log error message
    */
@@ -161,73 +158,86 @@ class Logger implements ILoggerService {
         errorDetails: error.details,
       }),
     });
-    
+
     this.winston.error(message, errorMeta);
   }
-  
+
   /**
    * Log debug message
    */
   public debug(message: string, meta?: any): void {
     this.winston.debug(message, this.addRequestId(meta));
   }
-  
+
   /**
    * Log HTTP request/response
    */
   public http(message: string, meta?: any): void {
     this.winston.http(message, this.addRequestId(meta));
   }
-  
+
   /**
    * Log API call
    */
-  public api(operation: string, details: {
-    method?: string;
-    endpoint?: string;
-    statusCode?: number;
-    duration?: number;
-    error?: any;
-    request?: any;
-    response?: any;
-  }): void {
+  public api(
+    operation: string,
+    details: {
+      method?: string;
+      endpoint?: string;
+      statusCode?: number;
+      duration?: number;
+      error?: any;
+      request?: any;
+      response?: any;
+    },
+  ): void {
     const message = `QuickBooks API: ${operation}`;
     const meta = this.addRequestId({
       operation,
       ...details,
       timestamp: new Date().toISOString(),
     });
-    
+
     if (details.error) {
       this.winston.error(message, meta);
     } else {
       this.winston.http(message, meta);
     }
   }
-  
+
   /**
    * Log performance metrics
    */
   public performance(operation: string, duration: number, meta?: any): void {
-    this.winston.info(`Performance: ${operation}`, this.addRequestId({
-      ...meta,
-      operation,
-      duration,
-      unit: 'ms',
-    }));
+    this.winston.info(
+      `Performance: ${operation}`,
+      this.addRequestId({
+        ...meta,
+        operation,
+        duration,
+        unit: 'ms',
+      }),
+    );
   }
-  
+
   /**
    * Log cache operation
    */
-  public cache(operation: 'hit' | 'miss' | 'set' | 'delete' | 'clear', key?: string, meta?: any): void {
-    this.winston.debug(`Cache ${operation}`, this.addRequestId({
-      ...meta,
-      operation,
-      key,
-    }));
+  public cache(
+    operation: 'hit' | 'miss' | 'set' | 'delete' | 'clear',
+    key?: string,
+    meta?: any,
+  ): void {
+    this.winston.debug(
+      `Cache ${operation}`,
+      this.addRequestId({
+        ...meta,
+        operation,
+        key,
+      }),
+    );
   }
-  
+
   /**
    * Create child logger with context
    */
@@ -239,7 +249,7 @@ class Logger implements ILoggerService {
     }
     return childLogger;
   }
-  
+
   /**
    * Start a timer for performance logging
    */
@@ -247,7 +257,7 @@ class Logger implements ILoggerService {
     const start = Date.now();
     return () => Date.now() - start;
   }
-  
+
   /**
    * Log MCP tool execution
    */
@@ -258,7 +268,7 @@ class Logger implements ILoggerService {
       phase,
       ...details,
     });
-    
+
     if (phase === 'error') {
       this.winston.error(message, meta);
     } else {
