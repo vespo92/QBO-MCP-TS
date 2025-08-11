@@ -277,8 +277,23 @@ class Logger implements ILoggerService {
   }
 }
 
-// Export singleton logger instance
-export const logger = new Logger();
+// Export a lazy getter for the logger instance
+let loggerInstance: Logger | null = null;
+
+export const getLogger = () => {
+  if (!loggerInstance) {
+    loggerInstance = new Logger();
+  }
+  return loggerInstance;
+};
+
+// For backward compatibility, export a proxy that initializes lazily
+export const logger = new Proxy({} as Logger, {
+  get(_target, prop, receiver) {
+    const instance = getLogger();
+    return Reflect.get(instance, prop, receiver);
+  },
+});
 
 // Export logger class for testing
 export { Logger };
