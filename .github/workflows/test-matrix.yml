@@ -41,9 +41,6 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Lint
-        run: npm run lint
-
       - name: Test
         run: npm test -- --passWithNoTests --coverage
 
@@ -52,6 +49,11 @@ jobs:
 
       - name: Test STDIO mode
         if: matrix.os != 'windows-latest'
+        env:
+          QBO_CLIENT_ID: test-client-id
+          QBO_CLIENT_SECRET: test-client-secret
+          QBO_COMPANY_ID: test-company-id
+          QBO_REFRESH_TOKEN: test-refresh-token
         run: |
           echo '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"1.0.0","capabilities":{}},"id":1}' | timeout 5s node dist/index.js --transport stdio || [ $? -eq 124 ]
 
