@@ -421,7 +421,7 @@ export class QBOApiClient {
         : new Date(Date.now() + 3600000);
 
       return { remaining, limit, reset };
-    } catch (error) {
+    } catch (_error) {
       // Return default values if headers are not available
       return {
         remaining: 1000,

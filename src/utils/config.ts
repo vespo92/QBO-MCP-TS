@@ -73,7 +73,7 @@ export class Config {
     const parseResult = EnvSchema.safeParse(process.env);
 
     if (!parseResult.success) {
-      const missingVars = parseResult.error.errors.map((e) => e.path.join('.')).join(', ');
+      const missingVars = parseResult.error.issues.map((e) => e.path.join('.')).join(', ');
       throw new Error(`Missing or invalid environment variables: ${missingVars}`);
     }
 

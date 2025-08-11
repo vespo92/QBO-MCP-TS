@@ -26,7 +26,7 @@ export class CacheService implements ICacheService {
   private readonly maxSize: number;
   private readonly defaultTTL: number;
   private readonly persistPath?: string;
-  private cleanupInterval?: NodeJS.Timeout;
+  private cleanupInterval?: ReturnType<typeof setInterval>;
 
   constructor() {
     const cacheConfig = config.getCacheConfig();
@@ -147,7 +147,7 @@ export class CacheService implements ICacheService {
     if (this.persistPath) {
       try {
         await fs.unlink(this.persistPath);
-      } catch (error) {
+      } catch (_error) {
         // File might not exist
       }
     }
@@ -234,7 +234,7 @@ export class CacheService implements ICacheService {
       }
 
       logger.info(`Loaded ${loaded} cache entries from disk`);
-    } catch (error) {
+    } catch (_error) {
       // File might not exist or be corrupted
       logger.debug('No existing cache file found or failed to load');
     }
