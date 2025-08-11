@@ -68,30 +68,32 @@ export class Config {
   private env: EnvConfig;
   private configFile?: any;
 
-  private constructor() {
+  private constructor(skipValidation: boolean = false) {
     // Parse and validate environment variables
     const parseResult = EnvSchema.safeParse(process.env);
 
-    if (!parseResult.success) {
+    if (!skipValidation && !parseResult.success) {
       const missingVars = parseResult.error.issues.map((e) => e.path.join('.')).join(', ');
       throw new Error(`Missing or invalid environment variables: ${missingVars}`);
     }
 
-    this.env = parseResult.data;
+    this.env = parseResult.data || ({} as EnvConfig);
 
     // Load additional config from file if exists
     this.loadConfigFile();
 
     // Create necessary directories
-    this.ensureDirectories();
+    if (!skipValidation) {
+      this.ensureDirectories();
+    }
   }
 
   /**
    * Get singleton instance
    */
-  public static getInstance(): Config {
+  public static getInstance(skipValidation: boolean = false): Config {
     if (!Config.instance) {
-      Config.instance = new Config();
+      Config.instance = new Config(skipValidation);
     }
     return Config.instance;
   }
@@ -275,5 +277,13 @@ export class Config {
   }
 }
 
-// Export singleton instance
-export const config = Config.getInstance();
+// Export a lazy getter for the config instance
+export const getConfig = () => Config.getInstance();
+
+// For backward compatibility, export a proxy that initializes lazily
+export const config = new Proxy({} as Config, {
+  get(_target, prop, receiver) {
+    const instance = Config.getInstance();
+    return Reflect.get(instance, prop, receiver);
+  },
+});
