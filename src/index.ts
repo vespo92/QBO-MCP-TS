@@ -6,11 +6,6 @@
 
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { QBOMCPServer } from './server';
-import { StdioTransport } from './transports/stdio';
-import { SSETransport } from './transports/sse';
-import { config } from './utils/config';
-import { logger } from './utils/logger';
 
 /**
  * Parse command line arguments
@@ -42,13 +37,20 @@ const argv = yargs(hideBin(process.argv))
     description: 'Enable debug logging',
   })
   .help()
-  .alias('help', 'h')
+  .version('2.1.0')
   .parseSync();
 
 /**
  * Main application entry point
  */
 async function main() {
+  // Import dependencies only when actually running
+  const { QBOMCPServer } = await import('./server');
+  const { StdioTransport } = await import('./transports/stdio');
+  const { SSETransport } = await import('./transports/sse');
+  const { config } = await import('./utils/config');
+  const { logger } = await import('./utils/logger');
+
   try {
     // Log startup information
     logger.info('Starting QBOMCP-TS Server', {
@@ -127,10 +129,15 @@ async function main() {
 
 // Run the application
 if (require.main === module) {
-  main().catch((error) => {
-    console.error('Fatal error:', error);
-    process.exit(1);
-  });
+  // Check if help is requested to avoid loading config
+  const helpRequested = process.argv.includes('--help') || process.argv.includes('-h');
+
+  if (!helpRequested) {
+    main().catch((error) => {
+      console.error('Fatal error:', error);
+      process.exit(1);
+    });
+  }
 }
 
 // Export for testing
