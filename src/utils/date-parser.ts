@@ -1,30 +1,103 @@
 /**
  * Natural language date parser for accounting queries
+ * Using native Date methods instead of date-fns
  */
 
-import {
-  format,
-  parse,
-  startOfMonth,
-  endOfMonth,
-  startOfQuarter,
-  endOfQuarter,
-  startOfYear,
-  endOfYear,
-  subMonths,
-  subQuarters,
-  subYears,
-  addDays,
-  isValid,
-} from 'date-fns';
-
 export class DateParser {
+  /**
+   * Format date to yyyy-MM-dd
+   */
+  private static formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  /**
+   * Add days to a date
+   */
+  private static addDays(date: Date, days: number): Date {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+  }
+
+  /**
+   * Add months to a date
+   */
+  private static addMonths(date: Date, months: number): Date {
+    const result = new Date(date);
+    result.setMonth(result.getMonth() + months);
+    return result;
+  }
+
+  /**
+   * Add years to a date
+   */
+  private static addYears(date: Date, years: number): Date {
+    const result = new Date(date);
+    result.setFullYear(result.getFullYear() + years);
+    return result;
+  }
+
+  /**
+   * Get start of month
+   */
+  private static startOfMonth(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+  }
+
+  /**
+   * Get end of month
+   */
+  private static endOfMonth(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  }
+
+  /**
+   * Get start of quarter
+   */
+  private static startOfQuarter(date: Date): Date {
+    const quarter = Math.floor(date.getMonth() / 3);
+    return new Date(date.getFullYear(), quarter * 3, 1);
+  }
+
+  /**
+   * Get end of quarter
+   */
+  private static endOfQuarter(date: Date): Date {
+    const quarter = Math.floor(date.getMonth() / 3);
+    return new Date(date.getFullYear(), (quarter + 1) * 3, 0);
+  }
+
+  /**
+   * Get start of year
+   */
+  private static startOfYear(date: Date): Date {
+    return new Date(date.getFullYear(), 0, 1);
+  }
+
+  /**
+   * Get end of year
+   */
+  private static endOfYear(date: Date): Date {
+    return new Date(date.getFullYear(), 11, 31);
+  }
+
+  /**
+   * Check if date is valid
+   */
+  private static isValid(date: Date): boolean {
+    return date instanceof Date && !isNaN(date.getTime());
+  }
+
   /**
    * Parse natural language date string to ISO date
    */
   public static parse(input: string): string {
     if (!input) {
-      return format(new Date(), 'yyyy-MM-dd');
+      return this.formatDate(new Date());
     }
 
     const normalized = input.toLowerCase().trim();
@@ -32,28 +105,28 @@ export class DateParser {
 
     // Check for relative dates
     if (normalized === 'today') {
-      return format(today, 'yyyy-MM-dd');
+      return this.formatDate(today);
     }
 
     if (normalized === 'yesterday') {
-      return format(addDays(today, -1), 'yyyy-MM-dd');
+      return this.formatDate(this.addDays(today, -1));
     }
 
     if (normalized === 'tomorrow') {
-      return format(addDays(today, 1), 'yyyy-MM-dd');
+      return this.formatDate(this.addDays(today, 1));
     }
 
     // Month-based patterns
     if (normalized === 'this month' || normalized === 'current month') {
-      return format(startOfMonth(today), 'yyyy-MM-dd');
+      return this.formatDate(this.startOfMonth(today));
     }
 
     if (normalized === 'last month' || normalized === 'previous month') {
-      return format(startOfMonth(subMonths(today, 1)), 'yyyy-MM-dd');
+      return this.formatDate(this.startOfMonth(this.addMonths(today, -1)));
     }
 
     if (normalized === 'next month') {
-      return format(startOfMonth(addDays(today, 30)), 'yyyy-MM-dd');
+      return this.formatDate(this.startOfMonth(this.addMonths(today, 1)));
     }
 
     // Quarter-based patterns
@@ -62,28 +135,30 @@ export class DateParser {
       const quarter = parseInt(quarterMatch[1]!);
       const year = quarterMatch[2] ? parseInt(quarterMatch[2]) : today.getFullYear();
       const date = new Date(year, (quarter - 1) * 3, 1);
-      return format(startOfQuarter(date), 'yyyy-MM-dd');
+      return this.formatDate(this.startOfQuarter(date));
     }
 
     if (normalized === 'this quarter' || normalized === 'current quarter') {
-      return format(startOfQuarter(today), 'yyyy-MM-dd');
+      return this.formatDate(this.startOfQuarter(today));
     }
 
     if (normalized === 'last quarter' || normalized === 'previous quarter') {
-      return format(startOfQuarter(subQuarters(today, 1)), 'yyyy-MM-dd');
+      const lastQuarter = new Date(today);
+      lastQuarter.setMonth(lastQuarter.getMonth() - 3);
+      return this.formatDate(this.startOfQuarter(lastQuarter));
     }
 
     // Year-based patterns
     if (normalized === 'this year' || normalized === 'current year') {
-      return format(startOfYear(today), 'yyyy-MM-dd');
+      return this.formatDate(this.startOfYear(today));
     }
 
     if (normalized === 'last year' || normalized === 'previous year') {
-      return format(startOfYear(subYears(today, 1)), 'yyyy-MM-dd');
+      return this.formatDate(this.startOfYear(this.addYears(today, -1)));
     }
 
     if (normalized === 'year to date' || normalized === 'ytd') {
-      return format(startOfYear(today), 'yyyy-MM-dd');
+      return this.formatDate(this.startOfYear(today));
     }
 
     // Fiscal year patterns (assuming fiscal year = calendar year for now)
@@ -91,9 +166,9 @@ export class DateParser {
       const fyMatch = normalized.match(/(?:fiscal year|fy)\s*(\d{4})/);
       if (fyMatch) {
         const year = parseInt(fyMatch[1]!);
-        return format(new Date(year, 0, 1), 'yyyy-MM-dd');
+        return this.formatDate(new Date(year, 0, 1));
       }
-      return format(startOfYear(today), 'yyyy-MM-dd');
+      return this.formatDate(this.startOfYear(today));
     }
 
     // Month name patterns
@@ -116,30 +191,38 @@ export class DateParser {
       if (normalized.includes(monthNames[i]!)) {
         const yearMatch = normalized.match(/(\d{4})/);
         const year = yearMatch ? parseInt(yearMatch[1]!) : today.getFullYear();
-        return format(new Date(year, i, 1), 'yyyy-MM-dd');
+        return this.formatDate(new Date(year, i, 1));
       }
     }
 
     // Try standard date formats
-    const formats = [
-      'yyyy-MM-dd',
-      'MM/dd/yyyy',
-      'MM-dd-yyyy',
-      'dd/MM/yyyy',
-      'dd-MM-yyyy',
-      'MMM dd, yyyy',
-      'MMMM dd, yyyy',
+    const datePatterns = [
+      /^(\d{4})-(\d{1,2})-(\d{1,2})$/, // yyyy-MM-dd
+      /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, // MM/dd/yyyy
+      /^(\d{1,2})-(\d{1,2})-(\d{4})$/, // MM-dd-yyyy
     ];
 
-    for (const fmt of formats) {
-      try {
-        const parsed = parse(input, fmt, new Date());
-        if (isValid(parsed)) {
-          return format(parsed, 'yyyy-MM-dd');
+    for (const pattern of datePatterns) {
+      const match = input.match(pattern);
+      if (match) {
+        let date: Date;
+        if (pattern === datePatterns[0]) {
+          // yyyy-MM-dd
+          date = new Date(parseInt(match[1]!), parseInt(match[2]!) - 1, parseInt(match[3]!));
+        } else {
+          // MM/dd/yyyy or MM-dd-yyyy
+          date = new Date(parseInt(match[3]!), parseInt(match[1]!) - 1, parseInt(match[2]!));
         }
-      } catch {
-        // Continue to next format
+        if (this.isValid(date)) {
+          return this.formatDate(date);
+        }
       }
+    }
+
+    // Try parsing as native Date
+    const parsed = new Date(input);
+    if (this.isValid(parsed)) {
+      return this.formatDate(parsed);
     }
 
     // If nothing matches, return the original input
@@ -157,67 +240,67 @@ export class DateParser {
     // Common ranges
     if (normalized === 'this month' || normalized === 'current month') {
       return {
-        start: format(startOfMonth(today), 'yyyy-MM-dd'),
-        end: format(endOfMonth(today), 'yyyy-MM-dd'),
+        start: this.formatDate(this.startOfMonth(today)),
+        end: this.formatDate(this.endOfMonth(today)),
       };
     }
 
     if (normalized === 'last month' || normalized === 'previous month') {
-      const lastMonth = subMonths(today, 1);
+      const lastMonth = this.addMonths(today, -1);
       return {
-        start: format(startOfMonth(lastMonth), 'yyyy-MM-dd'),
-        end: format(endOfMonth(lastMonth), 'yyyy-MM-dd'),
+        start: this.formatDate(this.startOfMonth(lastMonth)),
+        end: this.formatDate(this.endOfMonth(lastMonth)),
       };
     }
 
     if (normalized === 'this quarter' || normalized === 'current quarter') {
       return {
-        start: format(startOfQuarter(today), 'yyyy-MM-dd'),
-        end: format(endOfQuarter(today), 'yyyy-MM-dd'),
+        start: this.formatDate(this.startOfQuarter(today)),
+        end: this.formatDate(this.endOfQuarter(today)),
       };
     }
 
     if (normalized === 'last quarter' || normalized === 'previous quarter') {
-      const lastQuarter = subQuarters(today, 1);
+      const lastQuarter = this.addMonths(today, -3);
       return {
-        start: format(startOfQuarter(lastQuarter), 'yyyy-MM-dd'),
-        end: format(endOfQuarter(lastQuarter), 'yyyy-MM-dd'),
+        start: this.formatDate(this.startOfQuarter(lastQuarter)),
+        end: this.formatDate(this.endOfQuarter(lastQuarter)),
       };
     }
 
     if (normalized === 'this year' || normalized === 'current year') {
       return {
-        start: format(startOfYear(today), 'yyyy-MM-dd'),
-        end: format(endOfYear(today), 'yyyy-MM-dd'),
+        start: this.formatDate(this.startOfYear(today)),
+        end: this.formatDate(this.endOfYear(today)),
       };
     }
 
     if (normalized === 'last year' || normalized === 'previous year') {
-      const lastYear = subYears(today, 1);
+      const lastYear = this.addYears(today, -1);
       return {
-        start: format(startOfYear(lastYear), 'yyyy-MM-dd'),
-        end: format(endOfYear(lastYear), 'yyyy-MM-dd'),
+        start: this.formatDate(this.startOfYear(lastYear)),
+        end: this.formatDate(this.endOfYear(lastYear)),
       };
     }
 
     if (normalized === 'year to date' || normalized === 'ytd') {
       return {
-        start: format(startOfYear(today), 'yyyy-MM-dd'),
-        end: format(today, 'yyyy-MM-dd'),
+        start: this.formatDate(this.startOfYear(today)),
+        end: this.formatDate(today),
       };
     }
 
     if (normalized === 'month to date' || normalized === 'mtd') {
       return {
-        start: format(startOfMonth(today), 'yyyy-MM-dd'),
-        end: format(today, 'yyyy-MM-dd'),
+        start: this.formatDate(this.startOfMonth(today)),
+        end: this.formatDate(today),
       };
     }
 
     if (normalized === 'quarter to date' || normalized === 'qtd') {
       return {
-        start: format(startOfQuarter(today), 'yyyy-MM-dd'),
-        end: format(today, 'yyyy-MM-dd'),
+        start: this.formatDate(this.startOfQuarter(today)),
+        end: this.formatDate(today),
       };
     }
 
@@ -229,16 +312,16 @@ export class DateParser {
 
       let start: Date;
       if (unit.startsWith('day')) {
-        start = addDays(today, -n);
+        start = this.addDays(today, -n);
       } else if (unit.startsWith('month')) {
-        start = subMonths(today, n);
+        start = this.addMonths(today, -n);
       } else {
-        start = subYears(today, n);
+        start = this.addYears(today, -n);
       }
 
       return {
-        start: format(start, 'yyyy-MM-dd'),
-        end: format(today, 'yyyy-MM-dd'),
+        start: this.formatDate(start),
+        end: this.formatDate(today),
       };
     }
 
@@ -249,15 +332,15 @@ export class DateParser {
       const year = quarterMatch[2] ? parseInt(quarterMatch[2]) : today.getFullYear();
       const date = new Date(year, (quarter - 1) * 3, 1);
       return {
-        start: format(startOfQuarter(date), 'yyyy-MM-dd'),
-        end: format(endOfQuarter(date), 'yyyy-MM-dd'),
+        start: this.formatDate(this.startOfQuarter(date)),
+        end: this.formatDate(this.endOfQuarter(date)),
       };
     }
 
     // Default to current month
     return {
-      start: format(startOfMonth(today), 'yyyy-MM-dd'),
-      end: format(endOfMonth(today), 'yyyy-MM-dd'),
+      start: this.formatDate(this.startOfMonth(today)),
+      end: this.formatDate(this.endOfMonth(today)),
     };
   }
 
@@ -267,17 +350,14 @@ export class DateParser {
   public static getFiscalYear(
     year?: number,
     fiscalYearStart: number = 1,
-  ): {
-    start: string;
-    end: string;
-  } {
+  ): { start: string; end: string } {
     const targetYear = year || new Date().getFullYear();
     const start = new Date(targetYear, fiscalYearStart - 1, 1);
     const end = new Date(targetYear + 1, fiscalYearStart - 1, 0);
 
     return {
-      start: format(start, 'yyyy-MM-dd'),
-      end: format(end, 'yyyy-MM-dd'),
+      start: this.formatDate(start),
+      end: this.formatDate(end),
     };
   }
 
@@ -286,7 +366,34 @@ export class DateParser {
    */
   public static formatDisplay(date: string | Date, formatStr: string = 'MMM dd, yyyy'): string {
     const d = typeof date === 'string' ? new Date(date) : date;
-    return isValid(d) ? format(d, formatStr) : String(date);
+    if (!this.isValid(d)) return String(date);
+
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    const monthName = months[d.getMonth()];
+    const day = d.getDate();
+    const year = d.getFullYear();
+
+    // Default format: "MMM dd, yyyy"
+    if (formatStr === 'MMM dd, yyyy') {
+      return `${monthName} ${day}, ${year}`;
+    }
+
+    // For other formats, just return ISO date
+    return this.formatDate(d);
   }
 
   /**
@@ -317,7 +424,7 @@ export class DateParser {
     const direction = days > 0 ? 1 : -1;
 
     while (remaining > 0) {
-      current = addDays(current, direction);
+      current = this.addDays(current, direction);
       const dayOfWeek = current.getDay();
 
       // Skip weekends
@@ -326,6 +433,6 @@ export class DateParser {
       }
     }
 
-    return format(current, 'yyyy-MM-dd');
+    return this.formatDate(current);
   }
 }

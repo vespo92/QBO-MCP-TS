@@ -195,7 +195,7 @@ export class InvoiceService {
 
       // Send with queue
       await queueService.add(() =>
-        this.api.sendEmail('Invoice', validated.invoiceId, validated.email),
+        this.api.sendEmail('Invoice', validated.invoiceId, validated.email || ''),
       );
 
       logger.info('Sent invoice', {

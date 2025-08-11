@@ -47,7 +47,8 @@ async function main() {
   // Import dependencies only when actually running
   const { QBOMCPServer } = await import('./server');
   const { StdioTransport } = await import('./transports/stdio');
-  const { SSETransport } = await import('./transports/sse');
+  // SSETransport temporarily disabled - will be reimplemented without Express
+  // const { SSETransport } = await import('./transports/sse');
   const { config } = await import('./utils/config');
   const { logger } = await import('./utils/logger');
 
@@ -85,22 +86,12 @@ async function main() {
 
     // Initialize transport based on selection
     if (argv.transport === 'sse') {
-      // SSE Transport for production
-      const transportConfig = {
-        ...config.getTransportConfig(),
-        type: 'sse' as const,
-        port: argv.port,
-        host: argv.host,
-      };
-
-      const transport = new SSETransport(server, transportConfig);
-      await transport.start();
-
-      console.log('\n✅ QBOMCP-TS Server started with SSE transport');
-      console.log(`📡 Listening on http://${argv.host}:${argv.port}`);
-      console.log(`🔗 SSE endpoint: http://${argv.host}:${argv.port}/sse`);
-      console.log(`💚 Health check: http://${argv.host}:${argv.port}/health`);
-      console.log('\nPress Ctrl+C to shutdown\n');
+      // SSE Transport temporarily disabled - Express dependency removed
+      console.error(
+        '\n❌ SSE transport is temporarily disabled while migrating away from Express.',
+      );
+      console.error('Please use STDIO transport instead: --transport stdio\n');
+      process.exit(1);
     } else {
       // STDIO Transport for local development
       const transport = new StdioTransport(server);

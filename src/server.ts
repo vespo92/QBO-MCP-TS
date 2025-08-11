@@ -99,7 +99,7 @@ export class QBOMCPServer {
 
         throw new McpError(ErrorCode.InternalError, error.message || 'An error occurred');
       } finally {
-        logger.clearRequestId();
+        logger.setRequestId(undefined);
       }
     });
 
@@ -315,7 +315,7 @@ export class QBOMCPServer {
    * Handle tool calls
    */
   private async handleToolCall(name: string, args: any): Promise<MCPToolResponse> {
-    const timer = logger.startTimer();
+    const startTime = Date.now();
 
     try {
       switch (name) {
@@ -418,7 +418,7 @@ export class QBOMCPServer {
           throw new ValidationError(`Unknown tool: ${name}`);
       }
     } finally {
-      const duration = timer();
+      const duration = Date.now() - startTime;
       logger.performance(`Tool: ${name}`, duration as unknown as number);
     }
   }

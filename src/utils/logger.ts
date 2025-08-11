@@ -1,279 +1,166 @@
 /**
- * Logger service for QBOMCP-TS
+ * Simple structured logger for QBOMCP-TS
  */
 
-import winston from 'winston';
-import path from 'path';
-import { config } from './config';
-import { ILoggerService } from '../types';
+type LogLevel = 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug';
 
-const { combine, timestamp, printf, colorize, errors } = winston.format;
+interface LogEntry {
+  timestamp: string;
+  level: LogLevel;
+  message: string;
+  meta?: any;
+  requestId?: string;
+}
 
 /**
- * Custom log format for better readability
+ * Simple logger class with structured output
  */
-const customFormat = printf(({ level, message, timestamp, stack, ...meta }) => {
-  let log = `${timestamp} [${level}]: ${message}`;
+export class Logger {
+  private readonly levels: Record<LogLevel, number> = {
+    error: 0,
+    warn: 1,
+    info: 2,
+    http: 3,
+    verbose: 4,
+    debug: 5,
+  };
 
-  // Add metadata if present
-  if (Object.keys(meta).length > 0) {
-    log += ` ${JSON.stringify(meta)}`;
-  }
-
-  // Add stack trace for errors
-  if (stack) {
-    log += `\n${stack}`;
-  }
-
-  return log;
-});
-
-/**
- * Logger implementation using Winston
- */
-class Logger implements ILoggerService {
-  private winston: winston.Logger;
+  private currentLevel: LogLevel = 'info';
   private requestId?: string;
+  private silent = false;
 
-  constructor() {
-    const logConfig = config.getLoggerConfig();
-
-    // Create transports array
-    const transports: winston.transport[] = [];
-
-    // Console transport for development
-    if (logConfig.enableConsole) {
-      transports.push(
-        new winston.transports.Console({
-          format: combine(
-            colorize({ all: true }),
-            timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-            errors({ stack: true }),
-            customFormat,
-          ),
-        }),
-      );
+  constructor(level: LogLevel = 'info') {
+    this.currentLevel = level;
+    // In production or test, reduce console output
+    if (process.env['NODE_ENV'] === 'test') {
+      this.silent = true;
     }
-
-    // File transports for production
-    if (logConfig.enableFile) {
-      // General log file
-      transports.push(
-        new winston.transports.File({
-          filename: path.join(logConfig.dir, 'combined.log'),
-          format: combine(
-            timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-            errors({ stack: true }),
-            customFormat,
-          ),
-          maxsize: 5242880, // 5MB
-          maxFiles: 5,
-        }),
-      );
-
-      // Error log file
-      transports.push(
-        new winston.transports.File({
-          filename: path.join(logConfig.dir, 'error.log'),
-          level: 'error',
-          format: combine(
-            timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-            errors({ stack: true }),
-            customFormat,
-          ),
-          maxsize: 5242880, // 5MB
-          maxFiles: 5,
-        }),
-      );
-
-      // API log file for QuickBooks API calls
-      transports.push(
-        new winston.transports.File({
-          filename: path.join(logConfig.dir, 'api.log'),
-          level: 'http',
-          format: combine(timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), customFormat),
-          maxsize: 5242880, // 5MB
-          maxFiles: 5,
-        }),
-      );
-    }
-
-    // Create Winston logger
-    this.winston = winston.createLogger({
-      level: logConfig.level,
-      transports,
-      exitOnError: false,
-    });
   }
 
   /**
-   * Set request ID for tracing
+   * Set the current request ID
    */
-  public setRequestId(requestId: string): void {
-    this.requestId = requestId;
+  setRequestId(id?: string): void {
+    this.requestId = id;
   }
 
   /**
-   * Clear request ID
+   * Check if should log at this level
    */
-  public clearRequestId(): void {
-    this.requestId = undefined;
+  private shouldLog(level: LogLevel): boolean {
+    if (this.silent) return false;
+    return this.levels[level] <= this.levels[this.currentLevel];
   }
 
   /**
-   * Add request ID to metadata
+   * Format and output log entry
    */
-  private addRequestId(meta: any = {}): any {
-    if (this.requestId) {
-      return { ...meta, requestId: this.requestId };
-    }
-    return meta;
-  }
+  private log(level: LogLevel, message: string, meta?: any): void {
+    if (!this.shouldLog(level)) return;
 
-  /**
-   * Log info message
-   */
-  public info(message: string, meta?: any): void {
-    this.winston.info(message, this.addRequestId(meta));
-  }
-
-  /**
-   * Log warning message
-   */
-  public warn(message: string, meta?: any): void {
-    this.winston.warn(message, this.addRequestId(meta));
-  }
-
-  /**
-   * Log error message
-   */
-  public error(message: string, error?: Error | any, meta?: any): void {
-    const errorMeta = this.addRequestId({
-      ...meta,
-      ...(error && {
-        errorName: error.name || 'Error',
-        errorMessage: error.message || String(error),
-        errorStack: error.stack,
-        errorCode: error.code,
-        errorDetails: error.details,
-      }),
-    });
-
-    this.winston.error(message, errorMeta);
-  }
-
-  /**
-   * Log debug message
-   */
-  public debug(message: string, meta?: any): void {
-    this.winston.debug(message, this.addRequestId(meta));
-  }
-
-  /**
-   * Log HTTP request/response
-   */
-  public http(message: string, meta?: any): void {
-    this.winston.http(message, this.addRequestId(meta));
-  }
-
-  /**
-   * Log API call
-   */
-  public api(
-    operation: string,
-    details: {
-      method?: string;
-      endpoint?: string;
-      statusCode?: number;
-      duration?: number;
-      error?: any;
-      request?: any;
-      response?: any;
-    },
-  ): void {
-    const message = `QuickBooks API: ${operation}`;
-    const meta = this.addRequestId({
-      operation,
-      ...details,
+    const entry: LogEntry = {
       timestamp: new Date().toISOString(),
-    });
+      level,
+      message,
+      ...(this.requestId && { requestId: this.requestId }),
+      ...(meta && { meta }),
+    };
 
-    if (details.error) {
-      this.winston.error(message, meta);
+    // In development, use pretty printing
+    if (process.env['NODE_ENV'] === 'development') {
+      const color = this.getColor(level);
+      console.log(
+        `${color}[${entry.timestamp}] ${level.toUpperCase()}: ${message}${this.resetColor()}`,
+      );
+      if (meta) {
+        console.log(JSON.stringify(meta, null, 2));
+      }
     } else {
-      this.winston.http(message, meta);
+      // In production, use JSON for structured logging
+      console.log(JSON.stringify(entry));
     }
   }
 
   /**
-   * Log performance metrics
+   * Get color code for log level (for development)
    */
-  public performance(operation: string, duration: number, meta?: any): void {
-    this.winston.info(
-      `Performance: ${operation}`,
-      this.addRequestId({
-        ...meta,
-        operation,
-        duration,
-        unit: 'ms',
-      }),
-    );
+  private getColor(level: LogLevel): string {
+    const colors: Record<LogLevel, string> = {
+      error: '\x1b[31m', // Red
+      warn: '\x1b[33m', // Yellow
+      info: '\x1b[36m', // Cyan
+      http: '\x1b[35m', // Magenta
+      verbose: '\x1b[34m', // Blue
+      debug: '\x1b[90m', // Gray
+    };
+    return colors[level] || '';
   }
 
-  /**
-   * Log cache operation
-   */
-  public cache(
-    operation: 'hit' | 'miss' | 'set' | 'delete' | 'clear',
-    key?: string,
-    meta?: any,
-  ): void {
-    this.winston.debug(
-      `Cache ${operation}`,
-      this.addRequestId({
-        ...meta,
-        operation,
-        key,
-      }),
-    );
+  private resetColor(): string {
+    return '\x1b[0m';
   }
 
-  /**
-   * Create child logger with context
-   */
-  public child(context: any): Logger {
-    const childLogger = new Logger();
-    childLogger.winston = this.winston.child(context);
-    if (this.requestId) {
-      childLogger.requestId = this.requestId;
-    }
-    return childLogger;
+  // Log level methods
+  error(message: string, error?: any): void {
+    const meta =
+      error instanceof Error
+        ? {
+            error: error.message,
+            stack: error.stack,
+          }
+        : error;
+    this.log('error', message, meta);
   }
 
-  /**
-   * Start a timer for performance logging
-   */
-  public startTimer(): () => void {
-    const start = Date.now();
-    return () => Date.now() - start;
+  warn(message: string, meta?: any): void {
+    this.log('warn', message, meta);
   }
 
-  /**
-   * Log MCP tool execution
-   */
-  public tool(toolName: string, phase: 'start' | 'complete' | 'error', details?: any): void {
-    const message = `MCP Tool ${toolName}: ${phase}`;
-    const meta = this.addRequestId({
-      tool: toolName,
-      phase,
-      ...details,
-    });
+  info(message: string, meta?: any): void {
+    this.log('info', message, meta);
+  }
 
-    if (phase === 'error') {
-      this.winston.error(message, meta);
+  http(message: string, meta?: any): void {
+    this.log('http', message, meta);
+  }
+
+  verbose(message: string, meta?: any): void {
+    this.log('verbose', message, meta);
+  }
+
+  debug(message: string, meta?: any): void {
+    this.log('debug', message, meta);
+  }
+
+  // Specialized logging methods
+  tool(toolName: string, status: 'start' | 'complete' | 'error', details?: any): void {
+    const message = `Tool: ${toolName} - ${status}`;
+    if (status === 'error') {
+      this.error(message, details);
     } else {
-      this.winston.info(message, meta);
+      this.info(message, details);
     }
+  }
+
+  api(method: string, url: string, details: any): void {
+    this.http(`API: ${method} ${url}`, details);
+  }
+
+  performance(operation: string, duration: number, meta?: any): void {
+    this.info(`Performance: ${operation}`, {
+      ...meta,
+      operation,
+      duration,
+      unit: 'ms',
+    });
+  }
+
+  cache(operation: 'hit' | 'miss' | 'set' | 'delete' | 'clear', key?: string, meta?: any): void {
+    this.debug(`Cache: ${operation}`, {
+      ...meta,
+      key,
+      operation,
+    });
   }
 }
 
@@ -282,7 +169,8 @@ let loggerInstance: Logger | null = null;
 
 export const getLogger = () => {
   if (!loggerInstance) {
-    loggerInstance = new Logger();
+    const level = (process.env['LOG_LEVEL'] as LogLevel) || 'info';
+    loggerInstance = new Logger(level);
   }
   return loggerInstance;
 };
@@ -294,6 +182,3 @@ export const logger = new Proxy({} as Logger, {
     return Reflect.get(instance, prop, receiver);
   },
 });
-
-// Export logger class for testing
-export { Logger };

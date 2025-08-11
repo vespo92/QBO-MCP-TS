@@ -20,8 +20,8 @@ describe('QBOMCP-TS Server', () => {
 
   it('should have all required dependencies', () => {
     expect(packageJson.dependencies).toHaveProperty('@modelcontextprotocol/sdk');
-    expect(packageJson.dependencies).toHaveProperty('express');
+    expect(packageJson.dependencies).toHaveProperty('axios');
     expect(packageJson.dependencies).toHaveProperty('zod');
-    expect(packageJson.dependencies).toHaveProperty('date-fns');
+    expect(packageJson.dependencies).toHaveProperty('jsonwebtoken');
   });
 });
