@@ -45,6 +45,11 @@ jobs:
         run: node dist/index.js --help
 
       - name: Test STDIO mode startup
+        env:
+          QBO_CLIENT_ID: test-client-id
+          QBO_CLIENT_SECRET: test-client-secret
+          QBO_COMPANY_ID: test-company-id
+          QBO_REFRESH_TOKEN: test-refresh-token
         run: |
           timeout 3s node dist/index.js --transport stdio < /dev/null || [ $? -eq 124 ]
 
