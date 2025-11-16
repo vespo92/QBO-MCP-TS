@@ -1,327 +1,292 @@
-# QBOMCP-TS: TypeScript QuickBooks Online MCP Server
+# QuickBooks Online MCP Server
 
-[![CI](https://github.com/vespo92/QBO-MCP-TS/actions/workflows/ci.yml/badge.svg)](https://github.com/vespo92/QBO-MCP-TS/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/qbo-mcp-ts.svg)](https://www.npmjs.com/package/qbo-mcp-ts)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
-[![MCP Compatible](https://img.shields.io/badge/MCP-2.0-green.svg)](https://modelcontextprotocol.io)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-brightgreen.svg)](https://nodejs.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/vespo92/QBO-MCP-TS/graphs/commit-activity)
+A production-ready, modular Model Context Protocol (MCP) server for QuickBooks Online integration. Built with TypeScript, designed for accountants, with comprehensive automation features and real-time capabilities.
 
-## 🚀 Overview
+## 🚀 Features
 
-QBOMCP-TS is a production-ready TypeScript reimplementation of the QuickBooks
-Online MCP Server, featuring enhanced architecture, dual transport support
-(STDIO & SSE), comprehensive error handling, and enterprise-grade features like
-caching, retry logic, and rate limiting.
+### Core Capabilities
+- ✅ **Modular Architecture** - Extensible tool and service system
+- ✅ **Full CRUD Operations** - Invoices, expenses, customers, payments
+- ✅ **Financial Reporting** - P&L, Balance Sheet, Cash Flow, AR/AP Aging
+- ✅ **Real-Time Updates** - SSE transport and QuickBooks webhooks
+- ✅ **Workflow Automation** - Rule-based automation engine
+- ✅ **Multi-Company Support** - Manage multiple QBO companies
+- ✅ **Production-Ready** - Comprehensive error handling, caching, rate limiting
 
-## ⚡ Quick Start with npx
-
-**No installation required!** Use directly with npx:
-
-```bash
-# Run with environment variables
-QBO_CLIENT_ID="your_id" QBO_CLIENT_SECRET="your_secret" \
-QBO_COMPANY_ID="your_company" QBO_REFRESH_TOKEN="your_token" \
-npx qbo-mcp-ts
-
-# Or use a .env file
-npx qbo-mcp-ts --env-file /path/to/.env
-
-# Start SSE server for web applications
-npx qbo-mcp-ts --transport sse --port 3000
-```
-
-## 🎁 Why Use npx?
-
-- **Zero Installation**: Run directly without installing dependencies
-- **Always Latest**: Automatically uses the latest published version
-- **No Global Pollution**: Doesn't clutter your global npm packages
-- **Quick Testing**: Perfect for trying out the server before committing
-- **CI/CD Friendly**: Ideal for automated workflows and GitHub Actions
-
-## ✨ Key Improvements Over Original QBOMCP
-
-### Architecture Enhancements
-
-- **Full TypeScript** with strict type safety and comprehensive type definitions
-- **Modular architecture** with clean separation of concerns
-- **Dual transport support**: STDIO for local development, SSE for production
-- **Service-oriented design** with dedicated services for caching, queuing, and
-  API operations
-
-### Performance & Reliability
-
-- **Intelligent caching** with LRU eviction and persistent storage
-- **Queue management** for API rate limiting and concurrent request handling
-- **Exponential backoff retry logic** for transient failures
-- **Connection pooling** and token refresh management
-- **Comprehensive error handling** with specific error types and recovery
-  strategies
+### Automation Features
+- 🔄 **Recurring Invoices** - Automated invoice generation (daily → yearly)
+- 📧 **Payment Reminders** - Smart follow-up sequences (4-tier system)
+- 🤖 **Workflow Engine** - Conditional rules and automated actions
+- 📊 **Scheduled Reports** - Automated report generation and distribution
 
 ### Developer Experience
+- 🧪 **Testing Infrastructure** - Jest with comprehensive test utilities
+- 📝 **TypeScript Strict Mode** - Complete type safety
+- 🔍 **Extensive Logging** - Structured logging with context
+- 📚 **Comprehensive Documentation** - Examples and guides
 
-- **Natural language date parsing** for all date inputs
-- **Comprehensive logging** with request tracing and performance metrics
-- **Health check endpoints** for monitoring
-- **Detailed API documentation** with TypeScript types
-- **Jest test framework** with unit and integration tests
-- **ESLint and Prettier** for code quality
-
-### Production Features
-
-- **SSE transport** for web-based deployments
-- **CORS configuration** for cross-origin requests
-- **Rate limiting** to prevent abuse
-- **Graceful shutdown** handling
-- **Docker support** (coming soon)
-- **Kubernetes ready** with health checks
-
-## 📋 Prerequisites
-
-- Node.js 18+ (for native fetch support)
-- QuickBooks Online account (or
-  [sandbox account](https://developer.intuit.com/app/developer/sandbox))
-- [Intuit Developer account](https://developer.intuit.com)
-- OAuth2 credentials from Intuit
-
-## 🔧 Installation Options
-
-### Option 1: Use Directly with npx (Recommended)
-
-No installation needed! The package is available on npm:
+## 📦 Installation
 
 ```bash
-# Create a .env file with your credentials
-cat > .env << EOF
-QBO_CLIENT_ID=your_client_id
-QBO_CLIENT_SECRET=your_client_secret
-QBO_COMPANY_ID=your_company_id
-QBO_REFRESH_TOKEN=your_refresh_token
-EOF
-
-# Run the server
-npx qbo-mcp-ts --env-file .env
-```
-
-### Option 2: Global Installation
-
-```bash
-# Install globally
-npm install -g qbo-mcp-ts
-
-# Run from anywhere
-qbo-mcp-ts --env-file /path/to/.env
-```
-
-### Option 3: Clone Repository (For Development)
-
-```bash
+# Clone the repository
 git clone https://github.com/vespo92/QBO-MCP-TS.git
-cd QBOMCP-TS
+cd QBO-MCP-TS
+
+# Install dependencies
 npm install
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your QuickBooks credentials
+
+# Build
 npm run build
+
+# Run
+npm start
 ```
 
-## 🚀 Usage
+## 🔧 Configuration
 
-### Claude Desktop Configuration
-
-Add to your Claude Desktop config:
-
-#### Using npx (Simplest - No Installation Required)
-
-```json
-{
-  "mcpServers": {
-    "quickbooks": {
-      "command": "npx",
-      "args": ["qbo-mcp-ts"],
-      "env": {
-        "QBO_CLIENT_ID": "your_client_id",
-        "QBO_CLIENT_SECRET": "your_client_secret",
-        "QBO_COMPANY_ID": "your_company_id",
-        "QBO_REFRESH_TOKEN": "your_refresh_token"
-      }
-    }
-  }
-}
-```
-
-#### Using Global Installation
-
-```json
-{
-  "mcpServers": {
-    "quickbooks": {
-      "command": "qbo-mcp-ts",
-      "args": [],
-      "env": {
-        "QBO_CLIENT_ID": "your_client_id",
-        "QBO_CLIENT_SECRET": "your_client_secret",
-        "QBO_COMPANY_ID": "your_company_id",
-        "QBO_REFRESH_TOKEN": "your_refresh_token"
-      }
-    }
-  }
-}
-```
-
-### Command Line Usage
-
-#### STDIO Mode (Default - for Claude Desktop)
+### Environment Variables
 
 ```bash
-# Using npx
-npx qbo-mcp-ts
+# QuickBooks OAuth
+CLIENT_ID=your_client_id
+CLIENT_SECRET=your_client_secret
+COMPANY_ID=your_company_id
+REFRESH_TOKEN=your_refresh_token
 
-# With environment file
-npx qbo-mcp-ts --env-file .env
+# Environment
+QBO_ENVIRONMENT=sandbox  # or 'production'
+NODE_ENV=development
 
-# With debug logging
-npx qbo-mcp-ts --debug
-```
+# SSE Transport (optional)
+SSE_PORT=3100
+SSE_HOST=localhost
 
-#### SSE Mode (for Web Applications)
+# Webhook Receiver (optional)
+WEBHOOK_PORT=3200
+WEBHOOK_VERIFIER_TOKEN=your_webhook_token
 
-```bash
-# Start SSE server on default port 3000
-npx qbo-mcp-ts --transport sse
+# Cache Settings
+CACHE_TTL=300
+CACHE_MAX_SIZE=100
+ENABLE_CACHE=true
 
-# Custom port
-npx qbo-mcp-ts --transport sse --port 8080
+# API Settings
+RETRY_ATTEMPTS=3
+RETRY_DELAY=1000
+TIMEOUT=30000
+RATE_LIMIT=60
 
-# With environment file
-npx qbo-mcp-ts --transport sse --env-file .env --port 3000
-```
-
-**SSE Endpoints:**
-
-- SSE Stream: `http://localhost:3000/sse`
-- Health Check: `http://localhost:3000/health`
-- Server Info: `http://localhost:3000/info`
-- Available Tools: `http://localhost:3000/tools`
-
-### Available Command Arguments
-
-```bash
-npx qbo-mcp-ts [options]
-
-Options:
-  --transport <type>    Transport type: 'stdio' (default) or 'sse'
-  --port <number>       Port for SSE server (default: 3000)
-  --env-file <path>     Path to .env file with credentials
-  --debug              Enable debug logging
-  --help               Show help information
-  --version            Show version number
+# Redis (optional)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
 ```
 
 ## 🛠️ Available Tools
 
 ### Invoice Management
-
-- `get_invoices` - Query invoices with natural language filters
-- `create_invoice` - Create new invoices
+- `get_invoices` - Query invoices with filtering
+- `create_invoice` - Create invoices with line items
 - `send_invoice` - Email invoices to customers
-- `get_invoice_aging` - Generate AR aging reports
 
-### Expense Tracking (Coming Soon)
+### Expense Management
+- `get_expenses` - Query expenses with filtering
+- `create_expense` - Create expenses with auto vendor/account lookup
 
-- `create_expense` - Record business expenses
-- `get_expenses` - Query expense transactions
+### Customer Management
+- `get_customers` - Query and search customers
+- `get_customer_balance` - Get balance details with overdue tracking
 
-### Financial Reports (Coming Soon)
+### Financial Reporting
+- `get_profit_loss` - Profit & Loss statements
+- `get_balance_sheet` - Balance Sheet reports
+- `get_cash_flow` - Cash Flow statements
+- `get_ar_aging` - Accounts Receivable aging
+- `get_ap_aging` - Accounts Payable aging
 
-- `profit_and_loss` - Generate P&L statements
-- `balance_sheet` - Generate balance sheets
-- `cash_flow` - Cash flow analysis
+### Utilities
+- `get_api_status` - Server health and metrics
 
-### Customer Management (Coming Soon)
+## 📖 Usage Examples
 
-- `get_customers` - List and search customers
-- `create_customer` - Add new customers
-- `customer_balance` - Check customer balances
-
-### System Tools
-
-- `help` - Get help on using the server
-- `get_api_status` - Check API connection and limits
-
-## 💡 Example Usage
-
-### Quick Examples with Natural Language
-
-```javascript
-// Get unpaid invoices from last month
-{
-  "tool": "get_invoices",
-  "arguments": {
-    "status": "unpaid",
-    "dateFrom": "last month"  // Understands "last month", "30 days ago", "Q1 2024", etc.
-  }
-}
-
-// Create and send invoice
+### Create an Invoice
+```typescript
 {
   "tool": "create_invoice",
-  "arguments": {
-    "customerName": "ABC Company",
+  "params": {
+    "customerName": "Acme Corp",
     "items": [
       {
-        "description": "Consulting Services",
-        "amount": 5000
+        "description": "Web Design Services",
+        "amount": 2500,
+        "quantity": 1
+      },
+      {
+        "description": "Hosting (1 year)",
+        "amount": 600,
+        "quantity": 1
       }
     ],
-    "dueDate": "30 days",  // Understands "30 days", "net 30", "end of month"
+    "dueDate": "net 30",
     "emailToCustomer": true
   }
 }
 ```
 
-## 🏗️ Architecture
-
-```
-QBOMCP-TS/
-├── src/
-│   ├── api/           # QuickBooks API client with retry logic
-│   ├── services/      # Business logic services
-│   │   ├── cache.ts   # LRU cache with persistence
-│   │   ├── queue.ts   # Rate limiting and queue management
-│   │   └── invoice.ts # Invoice operations
-│   ├── transports/    # MCP transport implementations
-│   │   ├── stdio.ts   # STDIO for local development
-│   │   └── sse.ts     # SSE for production
-│   ├── utils/         # Utility functions
-│   │   ├── config.ts  # Configuration management
-│   │   ├── logger.ts  # Winston logger
-│   │   └── date-parser.ts # Natural language dates
-│   ├── types/         # TypeScript type definitions
-│   ├── server.ts      # Main MCP server
-│   └── index.ts       # Entry point
-├── tests/            # Jest test suites
-├── logs/            # Application logs
-├── cache/           # Persistent cache storage
-└── dist/            # Compiled JavaScript
+### Query Overdue Invoices
+```typescript
+{
+  "tool": "get_invoices",
+  "params": {
+    "status": "overdue",
+    "dateFrom": "this year",
+    "dateTo": "today"
+  }
+}
 ```
 
-## 🔒 Security Features
+### Generate Profit & Loss Report
+```typescript
+{
+  "tool": "get_profit_loss",
+  "params": {
+    "startDate": "this quarter",
+    "endDate": "today",
+    "accountingMethod": "Accrual",
+    "summarizeBy": "Month"
+  }
+}
+```
 
-- **OAuth2 token management** with automatic refresh
-- **Input validation** using Zod schemas
-- **Rate limiting** to prevent API abuse
-- **CORS configuration** for secure cross-origin requests
-- **Environment-based configuration** (no hardcoded secrets)
-- **Comprehensive error handling** without exposing sensitive data
+## 🔄 Automation Setup
 
-## 📊 Performance Optimizations
+### Recurring Invoices
 
-- **Intelligent caching** reduces API calls by up to 80%
-- **Request queuing** prevents rate limit errors
-- **Connection pooling** for efficient resource usage
-- **Lazy loading** of services and resources
-- **Optimized date parsing** with memoization
-- **Batch operations** support (coming soon)
+```typescript
+import { automationService } from './services/automation.service';
+
+const scheduleId = await automationService.createRecurringInvoice({
+  customerId: '123',
+  lineItems: [
+    { description: 'Monthly Retainer', amount: 5000 }
+  ],
+  frequency: 'monthly',
+  startDate: new Date('2025-01-01'),
+  dueInDays: 30,
+  autoSend: true
+});
+```
+
+### Workflow Rules
+
+```typescript
+import { workflowService } from './services/workflow.service';
+
+workflowService.addRule({
+  id: 'auto-approve-small-expenses',
+  name: 'Auto-approve small expenses',
+  enabled: true,
+  trigger: 'expense:submitted',
+  conditions: [
+    { field: 'TotalAmt', operator: 'lt', value: 100 },
+    { field: 'category', operator: 'in', value: ['Office Supplies'] }
+  ],
+  actions: [
+    { type: 'approve', notify: 'submitter' },
+    { type: 'broadcast_event', eventType: 'expense:auto_approved' }
+  ]
+});
+```
+
+## 🌐 Real-Time Features
+
+### Server-Sent Events (SSE)
+
+Start the SSE server for real-time client updates:
+
+```typescript
+import { getSSETransport } from './transports/sse.transport';
+
+const sse = getSSETransport();
+await sse.start();
+
+// Events automatically broadcast:
+// - invoice:created, invoice:updated, invoice:paid
+// - payment:received
+// - expense:created
+// - customer:created
+// - report:ready
+// - webhook:received
+```
+
+### QuickBooks Webhooks
+
+Receive real-time notifications from QuickBooks:
+
+```typescript
+import { getWebhookReceiver } from './webhooks/receiver';
+
+const webhooks = getWebhookReceiver({
+  port: 3200,
+  verifierToken: process.env.WEBHOOK_VERIFIER_TOKEN
+});
+
+// Register handlers
+webhooks.on('invoice:create', async (data) => {
+  console.log('Invoice created:', data.id);
+  // Cache invalidation, notifications, etc.
+});
+
+await webhooks.start();
+```
+
+## 🏢 Multi-Company Support
+
+Manage multiple QuickBooks companies:
+
+```typescript
+import { multiCompanyService } from './services/multi-company.service';
+
+// Add companies
+await multiCompanyService.addCompany('company1', {
+  name: 'Acme Corp',
+  config: { /* QBO config */ }
+});
+
+await multiCompanyService.addCompany('company2', {
+  name: 'XYZ Inc',
+  config: { /* QBO config */ }
+});
+
+// Switch between companies
+multiCompanyService.setActiveCompany('company1');
+const invoices = await invoiceService.getInvoices();
+
+multiCompanyService.setActiveCompany('company2');
+const expenses = await expenseService.getExpenses();
+```
+
+## 💾 Redis Cache (Optional)
+
+Enable Redis for distributed caching:
+
+```typescript
+import { createRedisCacheService } from './services/cache-redis.service';
+
+const cache = await createRedisCacheService({
+  host: 'localhost',
+  port: 6379,
+  keyPrefix: 'qbo:',
+  enableFallback: true  // Falls back to in-memory if Redis unavailable
+});
+
+// Automatically used by all services
+```
 
 ## 🧪 Testing
 
@@ -329,199 +294,124 @@ QBOMCP-TS/
 # Run all tests
 npm test
 
-# Run with coverage
-npm run test:coverage
-
-# Watch mode for development
+# Run tests in watch mode
 npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
 ```
 
-## 📝 Development
+### Writing Tests
 
-### Available Scripts
+```typescript
+import { createMockInvoice, MockQBOApiClient } from './test-utils';
 
-```bash
-# Start in development mode with hot reload
-npm run dev
+describe('InvoiceService', () => {
+  it('should create invoice', async () => {
+    const mockClient = new MockQBOApiClient();
+    const service = new InvoiceService(mockClient);
 
-# Build the project
-npm run build
+    const invoice = await service.createInvoice({
+      customerName: 'Test Customer',
+      lineItems: [{ description: 'Test', amount: 100 }]
+    });
 
-# Run tests
-npm run test
-npm run test:watch    # Watch mode
-npm run test:coverage # With coverage
-
-# Code Quality
-npm run typecheck     # Check TypeScript types
-npm run lint          # Run ESLint
-npm run lint:fix      # Auto-fix ESLint issues
-npm run lint:strict   # Fail on warnings
-npm run format        # Format with Prettier
-npm run format:check  # Check formatting
-
-# Combined checks
-npm run check:all     # Run all checks (type, lint, format)
-npm run fix:all       # Fix all auto-fixable issues
+    expect(invoice.Id).toBeDefined();
+  });
+});
 ```
 
-### Code Quality & Linting
+## 📊 Architecture
 
-This project uses a comprehensive ESLint setup optimized for TypeScript MCP
-servers:
+### Service Layer
+- **InvoiceService** - Invoice operations and AR aging
+- **ExpenseService** - Expense management with vendor lookup
+- **ReportService** - 15+ financial reports with PDF export
+- **CustomerService** - Customer management and balance tracking
+- **PaymentService** - Payment recording and application
+- **AutomationService** - Recurring invoices and payment reminders
+- **WorkflowService** - Rule-based automation engine
 
-#### ESLint Configuration
+### Tool System
+- **BaseTool** - Abstract base with automatic validation
+- **ToolRegistry** - Auto-discovery and registration
+- **Modular Structure** - Each tool is self-contained
 
-- **TypeScript-aware rules** for type safety and best practices
-- **Import ordering** and organization rules
-- **Promise handling** validation
-- **Security scanning** for common vulnerabilities
-- **Node.js specific** rules and optimizations
-- **Prettier integration** for consistent formatting
+### Transport Layer
+- **SSE Transport** - Real-time server-to-client streaming
+- **Webhook Receiver** - QuickBooks event notifications
+- **STDIO Transport** - Standard MCP communication
 
-#### Key Linting Features
+## 🔒 Security
 
-- Warns on `any` types to encourage type safety
-- Enforces proper async/await patterns
-- Validates error handling practices
-- Checks for security issues (eval, non-literal fs operations)
-- Maintains import organization and naming conventions
-- Enforces code complexity limits (configurable warnings)
+- ✅ OAuth 2.0 with automatic token refresh
+- ✅ HMAC-SHA256 webhook signature verification
+- ✅ Replay attack prevention
+- ✅ Input validation with Zod schemas
+- ✅ Sensitive data sanitization in logs
+- ✅ Rate limiting and request queuing
 
-#### Pre-commit Hooks
+## 📈 Performance
 
-When the project is added to a Git repository, pre-commit hooks will
-automatically:
+- ✅ Multi-tier caching (in-memory + optional Redis)
+- ✅ Request queuing to prevent API throttling
+- ✅ Exponential backoff retry logic
+- ✅ Batch operations where possible
+- ✅ Lazy service initialization
 
-- Run ESLint on staged TypeScript files
-- Format code with Prettier
-- Prevent commits with linting errors
+## 🐛 Error Handling
 
-To set up hooks after initializing Git:
+50+ predefined errors with actionable suggestions:
 
-```bash
-npx husky init
+```typescript
+{
+  code: 'QBO_AUTH_001',
+  message: 'Your QuickBooks session has expired',
+  suggestion: 'Refreshing authentication automatically...',
+  recoverable: true,
+  severity: 'warning'
+}
 ```
 
-### Code Style Guidelines
+Automatic retry for recoverable errors:
+- Token refresh failures
+- Rate limit exceeded
+- Network timeouts
+- Transient errors
 
-- Use functional programming patterns where appropriate
-- Prefer `const` over `let`, never use `var`
-- Use template literals for string concatenation
-- Implement proper error types and handling
-- Add JSDoc comments for public APIs
-- Keep functions focused and under 150 lines
-- Maximum file length of 500 lines (warning)
+## 📚 Documentation
 
-## 🐳 Docker Support (Coming Soon)
-
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY dist ./dist
-EXPOSE 3000
-CMD ["node", "dist/index.js", "--transport", "sse"]
-```
-
-## 📚 API Documentation
-
-Full TypeScript definitions are available in `src/types/index.ts`. The server
-provides comprehensive type safety for all operations.
+- **FEATURES.md** - Comprehensive feature documentation
+- **ACCOUNTANT_NEEDS_RESEARCH.md** - Accountant requirements research
+- **IMPLEMENTATION_PLAN.md** - Technical roadmap
+- **API Examples** - See `examples/` directory
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please see the original CONTRIBUTING.md for
-guidelines.
+Contributions are welcome! Please:
 
-## 📄 License
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new features
+4. Ensure all tests pass
+5. Submit a pull request
 
-MIT License - See LICENSE file for details.
+## 📝 License
 
-## 🔍 Comparison with Original QBOMCP
+MIT License - see LICENSE file for details
 
-| Feature          | QBOMCP (Python) | QBOMCP-TS (TypeScript)   |
-| ---------------- | --------------- | ------------------------ |
-| Language         | Python 3.8+     | TypeScript 5.3+          |
-| Transport        | STDIO only      | STDIO + SSE              |
-| Type Safety      | Runtime checks  | Compile-time + Runtime   |
-| Caching          | None            | LRU with persistence     |
-| Retry Logic      | Basic           | Exponential backoff      |
-| Rate Limiting    | None            | Queue-based management   |
-| Logging          | Basic           | Structured with levels   |
-| Error Handling   | Basic           | Comprehensive with types |
-| Testing          | None            | Jest with coverage       |
-| Production Ready | Development     | Production-grade         |
-| Performance      | Good            | Optimized with caching   |
-| Monitoring       | None            | Health checks + Metrics  |
+## 🙏 Acknowledgments
 
-## 🎯 Getting Started Checklist
-
-1. ☑️ Get QuickBooks OAuth2 credentials from
-   [Intuit Developer](https://developer.intuit.com)
-2. ☑️ Create a `.env` file with your credentials
-3. ☑️ Run `npx qbo-mcp-ts --env-file .env` to test
-4. ☑️ Add to Claude Desktop config (see above)
-5. ☑️ Start using natural language to manage invoices!
-
-## 🚧 Roadmap
-
-- [x] Core invoice management
-- [x] Dual transport support
-- [x] Caching and queue management
-- [x] Comprehensive error handling
-- [x] npm package with npx support
-- [ ] Complete expense tracking
-- [ ] Full financial reports
-- [ ] Customer management
-- [ ] Batch operations
-- [ ] WebSocket transport
-- [ ] Docker deployment
-- [ ] Kubernetes manifests
-- [ ] OAuth2 flow UI
-- [ ] Multi-company support
-- [ ] Webhook support
-
-## 💡 Pro Tips
-
-1. **Quick Test**: Run `npx qbo-mcp-ts --help` to verify installation
-2. **Natural Language Dates**: Use phrases like "last month", "Q1 2024", "year
-   to date"
-3. **Caching**: Results are cached for 5 minutes by default (configurable)
-4. **Rate Limits**: The server automatically manages QuickBooks API rate limits
-5. **Debug Mode**: Use `npx qbo-mcp-ts --debug` for verbose logging
-6. **Health Monitoring**: Check `/health` endpoint for server status (SSE mode)
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-1. **Authentication Errors**: Ensure your refresh token is valid and not expired
-2. **Rate Limiting**: The server handles this automatically, but you can adjust
-   `API_RATE_LIMIT_PER_MINUTE`
-3. **Cache Issues**: Clear cache directory if experiencing stale data
-4. **Connection Issues**: Check network and QuickBooks API status
-
-### Debug Mode
-
-```bash
-# Enable debug logging with npx
-npx qbo-mcp-ts --debug
-
-# Or with environment variable
-LOG_LEVEL=debug npx qbo-mcp-ts
-
-# Debug SSE mode
-npx qbo-mcp-ts --transport sse --debug --port 3000
-```
+- Built with [@modelcontextprotocol/sdk](https://github.com/modelcontextprotocol/sdk)
+- QuickBooks Online API documentation
+- TypeScript and Node.js communities
 
 ## 📞 Support
 
-For issues specific to QBOMCP-TS, please open an issue in this repository. For
-QuickBooks API issues, refer to
-[Intuit Developer Support](https://developer.intuit.com/support).
+- **Issues**: [GitHub Issues](https://github.com/vespo92/QBO-MCP-TS/issues)
+- **Documentation**: See docs in repository
+- **API Reference**: See FEATURES.md
 
 ---
 
-**Built with ❤️ by the VCPU Infrastructure Team**
+**Made with ❤️ for accountants who want to automate their workflows**
