@@ -52,6 +52,9 @@ export class QBOApiClient {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
+        // QuickBooks API minor version 75+ required as of Aug 2025
+        // See: https://developer.intuit.com/app/developer/qbo/docs/api/accounting/most-commonly-used/account
+        'Minor-Version': '75',
       },
     });
 

@@ -430,41 +430,44 @@ export interface TransportConfig {
 // ============================================================================
 
 export class QBOError extends Error {
+  public suggestion?: string;
+
   constructor(
     message: string,
     public code: string,
-    public statusCode?: number,
+    suggestion?: string,
     public details?: any,
   ) {
     super(message);
     this.name = 'QBOError';
+    this.suggestion = suggestion;
   }
 }
 
 export class AuthenticationError extends QBOError {
-  constructor(message: string, details?: any) {
-    super(message, 'AUTH_ERROR', 401, details);
+  constructor(message: string, code = 'AUTH_ERROR', suggestion?: string, details?: any) {
+    super(message, code, suggestion, details);
     this.name = 'AuthenticationError';
   }
 }
 
 export class ValidationError extends QBOError {
-  constructor(message: string, details?: any) {
-    super(message, 'VALIDATION_ERROR', 400, details);
+  constructor(message: string, code = 'VALIDATION_ERROR', suggestion?: string, details?: any) {
+    super(message, code, suggestion, details);
     this.name = 'ValidationError';
   }
 }
 
 export class RateLimitError extends QBOError {
-  constructor(message: string, retryAfter?: number) {
-    super(message, 'RATE_LIMIT', 429, { retryAfter });
+  constructor(message: string, code = 'RATE_LIMIT', suggestion?: string, details?: any) {
+    super(message, code, suggestion, details);
     this.name = 'RateLimitError';
   }
 }
 
 export class NetworkError extends QBOError {
-  constructor(message: string, details?: any) {
-    super(message, 'NETWORK_ERROR', 503, details);
+  constructor(message: string, code = 'NETWORK_ERROR', suggestion?: string, details?: any) {
+    super(message, code, suggestion, details);
     this.name = 'NetworkError';
   }
 }
