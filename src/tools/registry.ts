@@ -1,4 +1,4 @@
-import { BaseTool } from './base-tool.js';
+import { BaseTool, type ToolCategory } from './base-tool.js';
 import { logger } from '../utils/logger.js';
 import { readdir } from 'fs/promises';
 import { join, extname } from 'path';
@@ -188,9 +188,7 @@ export class ToolRegistry {
    * @param category - Tool category
    * @returns Array of tool definitions in category
    */
-  listByCategory(
-    category: 'invoice' | 'expense' | 'report' | 'customer' | 'automation' | 'utility'
-  ): Tool[] {
+  listByCategory(category: ToolCategory): Tool[] {
     const tools: Tool[] = [];
 
     for (const [_, entry] of this.tools) {
@@ -200,6 +198,45 @@ export class ToolRegistry {
     }
 
     return tools.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /**
+   * List tools by multiple categories
+   *
+   * @param categories - Array of tool categories
+   * @returns Array of tool definitions in the specified categories
+   */
+  listByCategories(categories: ToolCategory[]): Tool[] {
+    const tools: Tool[] = [];
+    const categorySet = new Set(categories);
+
+    for (const [_, entry] of this.tools) {
+      if (entry.enabled && categorySet.has(entry.tool.metadata.category)) {
+        tools.push(entry.tool.getDefinition());
+      }
+    }
+
+    return tools.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /**
+   * Get all available categories
+   *
+   * @returns Array of unique categories with tool counts
+   */
+  getCategories(): Array<{ category: ToolCategory; count: number }> {
+    const categoryCounts = new Map<ToolCategory, number>();
+
+    for (const [_, entry] of this.tools) {
+      if (entry.enabled) {
+        const category = entry.tool.metadata.category;
+        categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
+      }
+    }
+
+    return Array.from(categoryCounts.entries())
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => a.category.localeCompare(b.category));
   }
 
   /**
