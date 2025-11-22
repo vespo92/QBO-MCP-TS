@@ -5,12 +5,51 @@ import { QBOError, ValidationError } from '../errors/index.js';
 import { ErrorBuilder } from '../errors/builder.js';
 
 /**
+ * Tool category types - comprehensive QB API coverage
+ */
+export type ToolCategory =
+  // Core Accounting
+  | 'accounting'      // Chart of accounts, journal entries
+  | 'tax'             // Tax codes, tax rates
+  | 'company'         // Company info, preferences
+  // Sales (AR)
+  | 'customer'        // Customer management
+  | 'invoice'         // Invoicing
+  | 'estimate'        // Quotes/estimates
+  | 'sales-receipt'   // Cash sales
+  | 'credit-memo'     // Credits & refunds
+  | 'payment'         // Customer payments
+  | 'item'            // Products/services
+  // Purchasing (AP)
+  | 'vendor'          // Vendor management
+  | 'bill'            // Bills
+  | 'bill-payment'    // Bill payments
+  | 'expense'         // Direct expenses
+  | 'purchase-order'  // Purchase orders
+  | 'vendor-credit'   // Vendor credits
+  // Banking
+  | 'banking'         // Deposits, transfers
+  // Inventory
+  | 'inventory'       // Stock management
+  // Employees
+  | 'employee'        // Employee management
+  | 'time-tracking'   // Time activities
+  // Reports
+  | 'report'          // All financial reports
+  // Integrations
+  | 'integration'     // 3rd party integrations
+  // Automation
+  | 'automation'      // Workflows, recurring
+  // Utility
+  | 'utility';        // System tools
+
+/**
  * Tool metadata interface
  */
 export interface ToolMetadata {
   name: string;
   description: string;
-  category: 'invoice' | 'expense' | 'report' | 'customer' | 'automation' | 'utility';
+  category: ToolCategory;
   tags?: string[];
   examples?: Array<{
     description: string;
