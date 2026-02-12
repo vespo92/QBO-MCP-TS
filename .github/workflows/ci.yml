@@ -54,7 +54,7 @@ jobs:
           timeout 3s node dist/index.js --transport stdio < /dev/null || [ $? -eq 124 ]
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: success()
         with:
           name: build-artifacts
