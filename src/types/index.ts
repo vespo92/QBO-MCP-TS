@@ -45,6 +45,11 @@ export interface QBOCustomer {
 
 export interface QBOInvoice {
   Id: string;
+  // SyncToken is REQUIRED by QBO for sparse update / delete operations.
+  // It's an integer-as-string that increments on every server-side mutation.
+  // The QBO API returns it on every read; pass it back unchanged when
+  // calling /invoice with sparse=true, or QBO returns 400 (StaleObjectError).
+  SyncToken?: string;
   DocNumber?: string;
   TxnDate: string;
   DueDate?: string;
@@ -56,6 +61,8 @@ export interface QBOInvoice {
   TotalAmt: number;
   Balance?: number;
   EmailStatus?: 'NotSet' | 'NeedToSend' | 'EmailSent';
+  PrivateNote?: string;
+  CustomerMemo?: { value: string };
   MetaData?: {
     CreateTime: string;
     LastUpdatedTime: string;

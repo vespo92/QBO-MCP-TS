@@ -259,6 +259,41 @@ export class QBOMCPServer {
           },
         },
       },
+      {
+        name: 'update_invoice',
+        description:
+          'Update an existing invoice (sparse update). Reads the latest SyncToken from QBO, then submits ONLY the fields provided. Use this when applying edits to an invoice the agent already created — do NOT create a new invoice for revisions.',
+        inputSchema: {
+          type: 'object',
+          required: ['invoiceId'],
+          properties: {
+            invoiceId: {
+              type: 'string',
+              description: 'QBO Invoice ID to update',
+            },
+            updates: {
+              type: 'object',
+              description:
+                'Partial QBOInvoice fields to change (e.g. DueDate, CustomerMemo, Line, PrivateNote, EmailStatus). Omitted fields stay unchanged because the call uses sparse update mode.',
+            },
+          },
+        },
+      },
+      {
+        name: 'delete_invoice',
+        description:
+          'Soft-delete (void) an invoice in QBO. Reads the latest SyncToken first, then issues a delete operation. Use sparingly — for a wrongly-created invoice, deleting and recreating is sometimes correct, but most issues are better fixed via update_invoice.',
+        inputSchema: {
+          type: 'object',
+          required: ['invoiceId'],
+          properties: {
+            invoiceId: {
+              type: 'string',
+              description: 'QBO Invoice ID to delete',
+            },
+          },
+        },
+      },
 
       // Help and Info Tools
       {
@@ -378,6 +413,52 @@ export class QBOMCPServer {
               apiCalls: 1,
             },
           };
+
+        case 'update_invoice': {
+          if (!args.invoiceId) {
+            throw new ValidationError('invoiceId is required for update_invoice');
+          }
+          const updates = args.updates ?? {};
+          const updated = await this.invoiceService.updateInvoice(args.invoiceId, updates);
+          return {
+            success: true,
+            data: {
+              message: 'Invoice updated successfully',
+              invoice: {
+                id: updated.Id,
+                number: updated.DocNumber,
+                total: updated.TotalAmt,
+                customer: updated.CustomerRef.name,
+                syncToken: updated.SyncToken,
+              },
+              fieldsUpdated: Object.keys(updates),
+            },
+            metadata: {
+              timestamp: new Date().toISOString(),
+              requestId: crypto.randomUUID(),
+              apiCalls: 2,
+            },
+          };
+        }
+
+        case 'delete_invoice': {
+          if (!args.invoiceId) {
+            throw new ValidationError('invoiceId is required for delete_invoice');
+          }
+          await this.invoiceService.deleteInvoice(args.invoiceId);
+          return {
+            success: true,
+            data: {
+              message: 'Invoice deleted successfully',
+              invoiceId: args.invoiceId,
+            },
+            metadata: {
+              timestamp: new Date().toISOString(),
+              requestId: crypto.randomUUID(),
+              apiCalls: 2,
+            },
+          };
+        }
 
         // Help tools
         case 'help':

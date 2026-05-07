@@ -3,17 +3,71 @@
 All notable changes to QBOMCP-TS will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project adheres to
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.2.0] - 2026-05-07
+
+### Added
+
+- **`update_invoice` tool**: Apply sparse updates to an existing invoice without
+  recreating it. Reads the latest `SyncToken` from QBO before each call so
+  agents can iterate on invoice edits safely. Use this when applying revisions
+  to an invoice the agent already created — do NOT create a new invoice for
+  edits.
+- **`delete_invoice` tool**: Soft-delete (void) an invoice via QBO's
+  `?operation=delete` endpoint, with the same fresh-SyncToken pattern.
+- `SyncToken` field on `QBOInvoice` type. QBO returns this on every read; it
+  must be passed back unchanged on writes or the API returns `StaleObjectError`.
+- `PrivateNote` and `CustomerMemo` fields on `QBOInvoice` (commonly edited via
+  sparse update, were already supported by the API).
+
+### Fixed
+
+- **`InvoiceService.updateInvoice` was sending `LastUpdatedTime` as the
+  `SyncToken`** — these are different values. QBO would have rejected every call
+  with `StaleObjectError` (400). Now reads the actual `SyncToken` from a fresh
+  `getInvoiceById()` (cache bypassed) and uses sparse update mode so omitted
+  fields are preserved instead of cleared.
+- **`InvoiceService.deleteInvoice` had the same `SyncToken` bug** AND was using
+  `Active: false` on the standard `/invoice` endpoint instead of the required
+  `/invoice?operation=delete` endpoint. Both fixed.
+- Tool registrations in `server.ts` previously listed `update_invoice` and
+  `delete_invoice` in the meta `setupTools()` stub but the actual MCP
+  `getToolDefinitions()` registry didn't include them. The handlers also didn't
+  exist. MCP clients would see the tools advertised but get `Unknown tool`
+  errors when calling them.
+
+### Migration
+
+No breaking changes. Existing `create_invoice`, `get_invoices`, `send_invoice`,
+`get_invoice_aging` tools unchanged. Consumers can now call:
+
+```json
+{
+  "name": "update_invoice",
+  "arguments": {
+    "invoiceId": "12345",
+    "updates": {
+      "DueDate": "2026-06-01",
+      "CustomerMemo": { "value": "Net 30 — pay by June 1" }
+    }
+  }
+}
+```
 
 ## [2.0.0] - 2025-01-08
 
 ### 🎉 Initial TypeScript Release
 
-This is a complete reimplementation of the original QBOMCP Python server in TypeScript, with significant architectural improvements and production-ready features.
+This is a complete reimplementation of the original QBOMCP Python server in
+TypeScript, with significant architectural improvements and production-ready
+features.
 
 ### Added
 
 #### Core Features
+
 - ✅ Full TypeScript implementation with strict type safety
 - ✅ Dual transport support (STDIO for local, SSE for production)
 - ✅ Comprehensive type definitions for all QuickBooks entities
@@ -21,6 +75,7 @@ This is a complete reimplementation of the original QBOMCP Python server in Type
 - ✅ Modular service-oriented architecture
 
 #### Performance & Reliability
+
 - ✅ Intelligent LRU caching with persistence
 - ✅ Queue management for API rate limiting
 - ✅ Exponential backoff retry logic
@@ -28,6 +83,7 @@ This is a complete reimplementation of the original QBOMCP Python server in Type
 - ✅ Graceful shutdown handling
 
 #### Production Features
+
 - ✅ SSE (Server-Sent Events) transport for web deployments
 - ✅ Health check endpoints for monitoring
 - ✅ CORS configuration for cross-origin requests
@@ -36,6 +92,7 @@ This is a complete reimplementation of the original QBOMCP Python server in Type
 - ✅ Request tracing and performance metrics
 
 #### Developer Experience
+
 - ✅ Comprehensive error handling with typed errors
 - ✅ Jest test framework setup
 - ✅ ESLint and Prettier configuration
@@ -44,6 +101,7 @@ This is a complete reimplementation of the original QBOMCP Python server in Type
 - ✅ Command-line interface with yargs
 
 ### Changed
+
 - Migrated from Python to TypeScript
 - Improved error messages with suggestions
 - Enhanced natural language processing
@@ -51,12 +109,14 @@ This is a complete reimplementation of the original QBOMCP Python server in Type
 - Restructured project organization
 
 ### Security
+
 - Environment-based configuration (no hardcoded secrets)
 - Input validation using Zod schemas
 - Rate limiting implementation
 - Secure token refresh handling
 
 ### Performance Improvements
+
 - Caching reduces API calls by up to 80%
 - Queue management prevents rate limit errors
 - Optimized date parsing with memoization
@@ -65,6 +125,7 @@ This is a complete reimplementation of the original QBOMCP Python server in Type
 ## [1.0.0] - Original Release
 
 ### Initial Python Implementation
+
 - Basic QuickBooks Online integration
 - STDIO transport support
 - Invoice management tools
@@ -76,24 +137,28 @@ This is a complete reimplementation of the original QBOMCP Python server in Type
 ## Roadmap for Future Releases
 
 ### [2.1.0] - Planned
+
 - [ ] Complete expense tracking implementation
 - [ ] Financial reports (P&L, Balance Sheet, Cash Flow)
 - [ ] Customer management tools
 - [ ] Vendor management tools
 
 ### [2.2.0] - Planned
+
 - [ ] Batch operations support
 - [ ] WebSocket transport option
 - [ ] Multi-company support
 - [ ] OAuth2 flow UI
 
 ### [2.3.0] - Planned
+
 - [ ] Docker deployment support
 - [ ] Kubernetes manifests
 - [ ] Prometheus metrics export
 - [ ] Webhook support for real-time updates
 
 ### [3.0.0] - Future
+
 - [ ] GraphQL API layer
 - [ ] Advanced analytics and insights
 - [ ] Machine learning for categorization
@@ -107,6 +172,7 @@ This is a complete reimplementation of the original QBOMCP Python server in Type
 ### For Claude Desktop Users
 
 1. **Update your configuration**:
+
    ```json
    {
      "mcpServers": {
@@ -125,6 +191,7 @@ This is a complete reimplementation of the original QBOMCP Python server in Type
    ```
 
 2. **Build the TypeScript version**:
+
    ```bash
    cd QBOMCP-TS
    npm install
@@ -136,6 +203,7 @@ This is a complete reimplementation of the original QBOMCP Python server in Type
 ### For Production Users
 
 1. **New SSE transport available**:
+
    ```bash
    npm run start:sse
    ```
@@ -150,9 +218,11 @@ This is a complete reimplementation of the original QBOMCP Python server in Type
    - Better suggestions for fixing issues
 
 ### Breaking Changes
+
 - None - Full backward compatibility maintained
 
 ### Deprecations
+
 - Python version will be maintained for 6 months but not receive new features
 
 ---
@@ -160,6 +230,7 @@ This is a complete reimplementation of the original QBOMCP Python server in Type
 ## Support
 
 For issues or questions:
+
 - Open an issue in the repository
 - Check the README for troubleshooting guide
 - Review the comprehensive documentation

@@ -241,24 +241,35 @@ export class InvoiceService {
    */
   public async updateInvoice(invoiceId: string, updates: Partial<QBOInvoice>): Promise<QBOInvoice> {
     try {
-      // Get current invoice
+      // Always read FRESH (bypass cache) — a stale SyncToken guarantees a 400 from QBO
+      await cacheService.delete(`invoice:${invoiceId}`);
       const current = await this.getInvoiceById(invoiceId);
 
-      // Merge updates
-      const updated = {
-        ...current,
+      if (!current.SyncToken) {
+        throw new Error(
+          `Invoice ${invoiceId} has no SyncToken — cannot update without it. ` +
+            `This typically means the GET response was malformed.`,
+        );
+      }
+
+      // Sparse update: send ONLY the fields we want to change, plus Id + SyncToken.
+      // Without sparse=true, QBO treats omitted fields as deletions.
+      const sparsePayload = {
         ...updates,
         Id: invoiceId,
-        SyncToken: current.MetaData?.LastUpdatedTime,
+        SyncToken: current.SyncToken,
+        sparse: true,
       };
 
-      // Update with queue
-      const result = await queueService.add(() => this.api.post<QBOInvoice>('/invoice', updated));
+      const result = await queueService.add(() =>
+        this.api.post<QBOInvoice>('/invoice', sparsePayload),
+      );
 
       // Clear cache
       await cacheService.delete(`invoice:${invoiceId}`);
       await cacheService.delete('invoices:*');
 
+      logger.info('Updated invoice', { invoiceId, fields: Object.keys(updates) });
       return result;
     } catch (error) {
       logger.error('Failed to update invoice', error);
@@ -268,18 +279,25 @@ export class InvoiceService {
 
   /**
    * Delete an invoice
+   *
+   * QBO uses a soft-delete via the `?operation=delete` query param. The
+   * SyncToken must match the server's current copy or the call returns
+   * StaleObjectError (400). We always re-read before deleting.
    */
   public async deleteInvoice(invoiceId: string): Promise<void> {
     try {
-      // Get current invoice for sync token
+      // Always read FRESH (bypass cache) — see updateInvoice rationale
+      await cacheService.delete(`invoice:${invoiceId}`);
       const current = await this.getInvoiceById(invoiceId);
 
-      // Delete with queue
+      if (!current.SyncToken) {
+        throw new Error(`Invoice ${invoiceId} has no SyncToken — cannot delete without it.`);
+      }
+
       await queueService.add(() =>
-        this.api.post('/invoice', {
+        this.api.post('/invoice?operation=delete', {
           Id: invoiceId,
-          SyncToken: current.MetaData?.LastUpdatedTime,
-          Active: false,
+          SyncToken: current.SyncToken,
         }),
       );
 
